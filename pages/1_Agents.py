@@ -1,8 +1,10 @@
 """Team and alerts: where alerts go (Telegram, email) and who looks after each zone."""
 
+import io
 import os
 import re
 
+import segno
 import streamlit as st
 
 from crowdshield import notify
@@ -25,6 +27,22 @@ kpi_cards([
     ("Alerts sent", f"{st.session_state.alert_count}", "this session"),
 ], accents=["#10b981" if channels else "#94a3b8", "#10b981" if assigned == 5 else "#f59e0b", "#2a78d6"])
 
+def connect_telegram(chat_id: str, name: str) -> None:
+    st.session_state.telegram_chat = {"id": chat_id, "name": name}
+    st.session_state.pop("telegram_code", None)
+    notify.send_telegram("Crowd Shield is connected. Alerts from your session will arrive here.", chat_id=chat_id)
+
+
+@st.fragment(run_every=4)
+def wait_for_telegram(code: str) -> None:
+    """Look for the user's Start every few seconds, so they never have to come back and press anything."""
+    found = notify.find_chat(code)
+    if found:
+        connect_telegram(*found)
+        st.rerun(scope="app")
+    st.caption(":material/hourglass_top: Waiting for Start in Telegram...")
+
+
 section("1. Where alerts go", "Nothing is ever sent on its own: only when you press Send alerts on the evacuation "
         "plan, switch alerts on while watching a live camera, or press a test button here.")
 tg, mail = st.columns(2)
@@ -33,7 +51,7 @@ with tg:
     linked = st.session_state.get("telegram_chat")
     if linked:
         who = f" ({linked['name']})" if linked.get("name") else ""
-        st.success(f"Alerts go to your Telegram{who}.")
+        st.success(f"Alerts go to Telegram{who}.")
         b1, b2 = st.columns(2)
         if b1.button("Send a test message", key="tg_test", width="stretch"):
             ok, message = notify.send_telegram("Crowd Shield test: alerts from this app reach this chat.",
@@ -49,23 +67,34 @@ with tg:
             (st.success if ok else st.error)(message)
     elif notify.bot_ready():
         code = st.session_state.setdefault("telegram_code", notify.new_link_code())
-        link = notify.connect_link(code)
+        link, group_link = notify.connect_link(code), notify.connect_link(code, group=True)
         if not link:
             st.warning("Telegram can't be reached right now. Try again in a minute.")
         else:
-            st.markdown("Get this session's alerts on your own phone. No sign-up, nothing to type.")
-            st.markdown(f"1. [Open Crowd Shield in Telegram]({link}) and press **Start**.\n"
-                        "2. Come back here and press **I pressed Start**.")
-            if st.button("I pressed Start", key="tg_check", type="primary", icon=":material/link:"):
-                found = notify.find_chat(code)
-                if found:
-                    chat_id, name = found
-                    st.session_state.telegram_chat = {"id": chat_id, "name": name}
-                    st.session_state.pop("telegram_code", None)
-                    notify.send_telegram("Crowd Shield is connected. Alerts from your session will arrive here.",
-                                         chat_id=chat_id)
-                    st.rerun()
-                st.warning("Not yet: open the link above in Telegram, press Start, then try again.")
+            qr, how = st.columns([2, 3], vertical_alignment="center")
+            png = io.BytesIO()
+            segno.make(link).save(png, kind="png", scale=6, border=2, dark="#0f172a")
+            qr.image(png.getvalue(), width=190, caption="Opens your Crowd Shield bot")
+            app_link = notify.connect_link(code, via="app")
+            how.markdown(f"**On your phone:** scan this code with the camera, then press **Start** in Telegram.\n\n"
+                         f"**On this computer:** open the [Telegram app]({app_link}) or "
+                         f"[Telegram Web]({notify.connect_link(code, via='web')}), then press **Start**.\n\n"
+                         f"**For a team group,** such as your police or volunteer group: "
+                         f"[add the bot to the group]({group_link}) "
+                         f"([from the Telegram app]({notify.connect_link(code, group=True, via='app')})). "
+                         "You need to be the group's admin.")
+            how.caption("This page connects by itself once you press Start. No Telegram yet? "
+                        "[Get it free](https://telegram.org/apps).")
+            wait_for_telegram(code)
+            bot = notify.bot_username()
+            with st.expander("The link doesn't open?"):
+                st.markdown(f"Some Wi-Fi and office networks block Telegram's links (t.me), but the Telegram app "
+                            f"still works. Use the Telegram app link above, scan the code with your phone on mobile "
+                            f"data, or do it by hand in the "
+                            f"Telegram app:\n\n"
+                            f"- **Just me:** search **@{bot}**, open it and send `/start {code}`\n"
+                            f"- **A team group:** add **@{bot}** to the group, then send `/start@{bot} {code}` in "
+                            f"the group\n\nThis page connects by itself a few seconds later.")
             st.caption("Your chat is linked to this browser session only and forgotten when you close it.")
     else:
         st.warning("Telegram is not set up on this server.")
