@@ -383,7 +383,7 @@ crowdshield/          the core, with no UI code
   sitemap.py          a mapped site's densities, risk and evacuation routes
 sites/                map sites (the Kumbh demo)
 eval/                 the accuracy tests behind every number above
-pages/                the Streamlit app: Agents, Upload, Analysis, Video, Map, Settings
+views/                the Streamlit app: Agents, Upload, Analysis, Video, Map, Settings
 results/              test results, per photo and per clip
 ```
 

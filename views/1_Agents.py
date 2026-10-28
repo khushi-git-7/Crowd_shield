@@ -158,5 +158,5 @@ if st.button("Save contacts", type="primary", icon=":material/save:"):
                    "this browser session; save your session in Settings to keep them.")
         st.rerun()
 
-next_step("Count some people, then send the plan to your team.", "pages/3_Analysis.py",
+next_step("Count some people, then send the plan to your team.", "views/3_Analysis.py",
           "Go to the evacuation plan and alerts", "/Analysis")

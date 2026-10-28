@@ -72,6 +72,15 @@ GLOBAL_CSS = """
   .ph h1 { margin: .25rem 0 .3rem !important; padding: 0 !important; font-weight: 800 !important; line-height: 1.15; }
   .ph p { margin: 0; color: var(--muted); font-size: .93rem; max-width: 780px; line-height: 1.55; }
   .ph .side { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+  .ph { position: relative; }
+  .brand { display: inline-flex; align-items: center; gap: .45rem; font-weight: 800; font-size: .95rem;
+           letter-spacing: -.01em; color: var(--text); white-space: nowrap; }
+  .brand svg { width: 28px; height: 28px; flex: none; }
+  .ph > .brand { position: absolute; top: .55rem; right: 0; }
+  .ph > .brand + div { padding-right: 10.5rem; }
+  .hero > .brand { position: absolute; top: 1.2rem; right: 1.4rem; color: #f1f5f9; z-index: 1; }
+  @media (max-width: 640px) { .ph > .brand { position: static; } .ph > .brand + div { padding-right: 0; }
+                              .hero > .brand { display: none; } }
   .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--safe); display: inline-block;
               animation: cs-live 1.8s infinite; }
   @keyframes cs-live { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,.55); }
@@ -210,14 +219,25 @@ GLOBAL_CSS = """
 """
 
 
+MARK_SVG = ("<svg viewBox='0 0 40 40' fill='none' aria-hidden='true'>"
+            "<path d='M20 4 L33 9 V19 C33 27.5 27.3 33.6 20 36 C12.7 33.6 7 27.5 7 19 V9 Z' fill='#0d9488'/>"
+            "<path d='M20 4 L33 9 V19 C33 27.5 27.3 33.6 20 36 Z' fill='#14b8a6'/>"
+            "<circle cx='15' cy='17' r='2.2' fill='#fff'/><circle cx='20.5' cy='14.5' r='2.2' fill='#fff'/>"
+            "<circle cx='25.5' cy='18' r='2.2' fill='#fff'/>"
+            "<circle cx='17.5' cy='23' r='2.2' fill='#fff' fill-opacity='.85'/>"
+            "<circle cx='23' cy='24.5' r='2.2' fill='#fff' fill-opacity='.85'/></svg>")  # assets/mark.svg
+BRAND = f"<span class='brand'>{MARK_SVG}Crowd Shield</span>"  # the name and logo, top right of each page
+
+
 def page_header(title: str, subtitle: str = "", eyebrow: str = "", live: bool = False,
                 pills: list[tuple[str, str]] | None = None) -> None:
     """The top of every page: a small eyebrow, the title, one line on what the page is for,
-    and optional status pills on the right as (text, kind) with kind neutral/brand/warn."""
+    optional status pills on the right as (text, kind) with kind neutral/brand/warn, and the
+    Crowd Shield name and logo in the top right corner."""
     dot = "<span class='live-dot'></span>" if live else ""
     side = "".join(f"<span class='pill {kind}'>{html.escape(text)}</span>" for text, kind in pills or [])
     st.markdown(
-        f"<div class='ph'><div><div class='eyebrow'>{dot}{html.escape(eyebrow)}</div>"
+        f"<div class='ph'>{BRAND}<div><div class='eyebrow'>{dot}{html.escape(eyebrow)}</div>"
         f"<h1>{html.escape(title)}</h1>"
         + (f"<p>{subtitle}</p>" if subtitle else "")
         + f"</div><div class='side'>{side}</div></div>",
