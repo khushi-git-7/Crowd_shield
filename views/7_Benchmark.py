@@ -56,7 +56,7 @@ st.markdown(
     unsafe_allow_html=True)
 
 # ── By scene ───────────────────────────────────────────────────────────────
-left, right = st.columns([6, 5], gap="large")
+left, right = st.container(key="stack_scenes").columns([6, 5], gap="large")
 with left:
     section("By scene")
     scenes = pd.DataFrame(by_scene(rows))
