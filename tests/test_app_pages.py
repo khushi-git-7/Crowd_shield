@@ -160,11 +160,14 @@ def test_a_visitor_connects_their_own_telegram_and_alerts_go_there(monkeypatch):
     assert f"https://t.me/CrowdShieldBot?startgroup={code}" in text
     assert f"/start {code}" in text and f"/start@CrowdShieldBot {code}" in text  # for networks that block t.me
 
-    next(b for b in app.button if b.label == "Done").click().run()  # nothing done in Telegram yet
-    assert any("Not found yet" in w.value for w in app.warning) and "telegram_chat" not in app.session_state
+    assert any("Waiting for Start" in c.value for c in app.caption)
+    assert any("Opens your Crowd Shield bot" in i.proto.imgs[0].caption for i in app.get("image"))  # the QR code
 
-    found[code] = ("777", "Asha")
-    next(b for b in app.button if b.label == "Done").click().run()
+    app.run()  # the page checks again on its own; nothing done in Telegram yet
+    assert "telegram_chat" not in app.session_state
+
+    found[code] = ("777", "Asha")  # the user pressed Start; the next check connects without any button
+    app.run()
     assert app.session_state.telegram_chat == {"id": "777", "name": "Asha"}
     assert sent[-1][0] == "777" and any("Asha" in s.value for s in app.success)
 
