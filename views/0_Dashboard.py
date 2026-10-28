@@ -8,7 +8,7 @@ import streamlit as st
 from detection import risk_level
 from crowdshield.notify import ready_channels
 from shared_state import GLOBAL_CSS, RISK_COLORS, SEGMENTS, get_seg_thresholds, init_state, telegram_chat, zone_label
-from ui import compact, kpi_cards, nav_link, risk_pill, section
+from ui import BRAND, compact, kpi_cards, nav_link, risk_pill, section
 
 st.set_page_config(page_title="Crowd Shield", page_icon=None, layout="wide")
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
@@ -28,7 +28,7 @@ hero_dots = f"<svg class='hero-dots' viewBox='0 0 300 190'>{''.join(dots)}</svg>
 
 st.markdown(f"""
 <div class="hero">
-  <div class="hero-grid"></div>{hero_dots}
+  <div class="hero-grid"></div>{hero_dots}{BRAND}
   <div class="eyebrow"><span class="live-dot"></span>Crowd safety for Indian public spaces</div>
   <h1>See crowd danger before it becomes a crush.</h1>
   <p>Crowd Shield counts the people in camera pictures, works out how crowded each part of a site is,
@@ -47,13 +47,13 @@ section("Start here", "Pick what you have. Each one works in a minute, and each 
         "you have nothing to hand.")
 START = [
     ("photo_camera", "I have a photo", "From CCTV, a drone or a phone. Get a dot on every head and a count.",
-     "pages/2_Upload.py", "Count people in a photo", "/Upload"),
+     "views/2_Upload.py", "Count people in a photo", "/Upload"),
     ("videocam", "I have a video clip", "See how a crowd changes second by second, and spot sudden surges.",
-     "pages/5_Video.py", "Analyse a video", "/Video"),
+     "views/5_Video.py", "Analyse a video", "/Video"),
     ("sensors", "I have a live camera", "Recount every 30 seconds and warn before a zone fills up.",
-     "pages/8_Live.py", "Watch a live camera", "/Live"),
+     "views/8_Live.py", "Watch a live camera", "/Live"),
     ("map", "I'm just exploring", "Open the Kumbh Mela site map and play a crowd surge forward.",
-     "pages/6_Map.py", "Open the site map", "/Map"),
+     "views/6_Map.py", "Open the site map", "/Map"),
 ]
 for col, (ic, title, body, target, label, url) in zip(st.columns(4), START):
     with col:
@@ -109,7 +109,7 @@ if data:
             f"<div style='font-size:1.7rem;font-weight:800;margin:.45rem 0 .1rem'>{count}</div>"
             f"<div style='font-size:.75rem;color:#64748b'>{'people' if d else 'not counted'}</div></div>",
             unsafe_allow_html=True)
-    nav_link("pages/3_Analysis.py", "See the evacuation plan and send alerts", ":material/campaign:", "/Analysis")
+    nav_link("views/3_Analysis.py", "See the evacuation plan and send alerts", ":material/campaign:", "/Analysis")
     if history:
         with st.expander(f"Earlier counts in this session ({len(history)})"):
             for entry in history[:8]:
@@ -119,4 +119,4 @@ if data:
 
 st.caption("The accuracy figures come from test photos the model never saw in training: the ShanghaiTech test sets "
            "and 10 hand-counted Indian photos, all counted at full detail.")
-nav_link("pages/7_Benchmark.py", "How accurate is it? See every test photo", ":material/verified:", "/Benchmark")
+nav_link("views/7_Benchmark.py", "How accurate is it? See every test photo", ":material/verified:", "/Benchmark")

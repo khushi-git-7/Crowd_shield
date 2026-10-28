@@ -14,7 +14,7 @@ pytest.importorskip("cv2")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-PAGES = {path.stem.split("_")[-1]: path for path in (ROOT / "pages").glob("*.py")}
+PAGES = {path.stem.split("_")[-1]: path for path in (ROOT / "views").glob("*.py")}
 
 
 def render(path: Path, **session_state) -> AppTest:
