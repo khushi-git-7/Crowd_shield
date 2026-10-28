@@ -65,3 +65,26 @@ def test_live_page_says_when_a_public_camera_is_offline(monkeypatch):
     app = render()
     app.radio[0].set_value("A real public camera (live now)").run()
     assert any("offline" in e.value for e in app.error)
+
+
+def test_a_live_alert_arrives_with_the_camera_picture(monkeypatch):
+    from crowdshield import counting, notify
+    from crowdshield.monitor import points_to_grid
+
+    def crowded(frame):  # 80 heads on the stairs, well over what the zone holds
+        h, w = frame.shape[:2]
+        return points_to_grid([(h * 0.8, w * 0.75 + i) for i in range(80)], frame.shape)
+
+    monkeypatch.setattr(counting, "make_counter", lambda: (crowded, "test counter"))
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token")
+    sent = []
+    monkeypatch.setattr(notify, "send_telegram",
+                        lambda text, image=None, chat_id=None: sent.append((text, image, chat_id)) or (True, "Sent."))
+    app = AppTest.from_file(str(LIVE), default_timeout=60)
+    app.session_state["telegram_chat"] = {"id": "5", "name": "Asha"}
+    app.run()
+    next(t for t in app.toggle if t.label == "Send alerts").set_value(True).run()
+    next(t for t in app.toggle if t.label == "Monitoring").set_value(True).run()
+    assert not app.exception, [e.message for e in app.exception]
+    text, image, chat = sent[0]
+    assert chat == "5" and "Stairs" in text and image[:2] == b"\xff\xd8"  # a JPEG of the frame

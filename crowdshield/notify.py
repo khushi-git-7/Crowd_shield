@@ -166,7 +166,7 @@ def alert_text(zone: str, name: str, risk: str, count: float, per_m2: float | No
                minutes_to_danger: float | None = None) -> str:
     """The text of a crowd alert: short enough to read on a lock screen."""
     head = {"Critical": "CRITICAL", "High Risk": "HIGH RISK"}.get(risk, risk.upper())
-    lines = [f"Crowd Shield: {head} in zone {zone} ({name})",
+    lines = [f"Crowd Shield: {head} in zone {zone}" + (f" ({name})" if name and name != zone else ""),
              f"About {count:,.0f} people" + (f", {per_m2:.1f} per m2" if per_m2 else "") + "."]
     if minutes_to_danger is not None and minutes_to_danger > 0:
         lines.append(f"At this pace it reaches 5 per m2 in about {minutes_to_danger:.0f} min.")
