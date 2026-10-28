@@ -180,5 +180,5 @@ with st.expander("About this server (for the curious)"):
     st.caption(f"Running from `{config.REPO_ROOT}`"
                f"{' (Streamlit Community Cloud)' if config.on_streamlit_cloud() else ''}.")
 
-next_step("With the limits set, count the people in a photo of each zone.", "pages/2_Upload.py",
+next_step("With the limits set, count the people in a photo of each zone.", "app_pages/2_Upload.py",
           "Count people in a photo", "/Upload", ":material/photo_camera:")

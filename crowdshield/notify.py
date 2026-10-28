@@ -91,14 +91,22 @@ def connect_link(code: str, group: bool = False, via: str = "link") -> str | Non
     return f"https://t.me/{name}?{start}={code}"
 
 
+last_check: dict = {"ok": None, "problem": "", "seen": 0}  # how the last find_chat went, for the page to show
+
+
 def find_chat(code: str) -> tuple[str, str] | None:
     """(chat id, name) of the chat that opened the bot with this code, if any has: a person who pressed Start
     ("/start <code>"), or a group the bot was just added to ("/start@<bot> <code>")."""
     try:
         reply = _post("getUpdates", {"allowed_updates": '["message"]', "limit": 100})
-    except Exception:
+    except urllib.error.HTTPError as exc:
+        last_check.update(ok=False, problem=f"Telegram answered {exc.code}")
+        return None
+    except Exception as exc:  # network down, timeout, bad reply
+        last_check.update(ok=False, problem=f"Telegram could not be reached ({type(exc).__name__})")
         return None
     updates = reply.get("result", [])
+    last_check.update(ok=True, problem="", seen=len(updates))
     if len(updates) > KEEP_UPDATES:  # Telegram keeps unread updates for a day; let go of all but the newest
         try:
             _post("getUpdates", {"offset": updates[-KEEP_UPDATES]["update_id"], "limit": 1})

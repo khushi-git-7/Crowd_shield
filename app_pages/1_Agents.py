@@ -1,13 +1,17 @@
 """Team and alerts: where alerts go (Telegram, email) and who looks after each zone."""
 
 import io
+import json
 import os
 import re
+import time
 
+import numpy as np
 import segno
 import streamlit as st
 
 from crowdshield import notify
+from crowdshield.config import REPO_ROOT
 from emailer import email_configured, send_email
 from shared_state import GLOBAL_CSS, SEGMENTS, init_state, telegram_chat, zone_label
 from ui import kpi_cards, next_step, page_header, section
@@ -27,6 +31,27 @@ kpi_cards([
     ("Alerts sent", f"{st.session_state.alert_count}", "this session"),
 ], accents=["#10b981" if channels else "#94a3b8", "#10b981" if assigned == 5 else "#f59e0b", "#2a78d6"])
 
+SAMPLE = REPO_ROOT / "data" / "india_test"
+
+
+@st.cache_data(show_spinner=False)
+def sample_alert() -> tuple[str, bytes | None]:
+    """A made-up alert, worded exactly as a real one, with a Kumbh Mela photo and the model's head dots."""
+    text = "SAMPLE ALERT (made up, to show the format)\n" + notify.alert_text(
+        "A", "Sangam Nose bathing area", "Critical", 941, 4.8, 6)
+    try:
+        import cv2
+
+        from crowdshield.detection import draw_head_dots
+
+        img = cv2.imread(str(SAMPLE / "images" / "IN_03.jpg"))
+        points = json.loads((SAMPLE / "predictions" / "IN_03.json").read_text())["points"]  # x, y
+        img = draw_head_dots(img, np.array([[y, x] for x, y in points]))
+        return text, cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 85])[1].tobytes()
+    except Exception:  # the photo is a nice extra; the text is the alert
+        return text, None
+
+
 def connect_telegram(chat_id: str, name: str) -> None:
     st.session_state.telegram_chat = {"id": chat_id, "name": name}
     st.session_state.pop("telegram_code", None)
@@ -40,24 +65,32 @@ def wait_for_telegram(code: str) -> None:
     if found:
         connect_telegram(*found)
         st.rerun(scope="app")
-    st.caption(":material/hourglass_top: Waiting for Start in Telegram...")
+    if notify.last_check.get("ok") is False:
+        st.warning(f"Can't check Telegram right now: {notify.last_check['problem']}. Trying again...")
+    else:
+        st.caption(f":material/hourglass_top: Waiting for Start in Telegram... (checked at "
+                   f"{time.strftime('%H:%M:%S')})")
 
 
 section("1. Where alerts go", "Nothing is ever sent on its own: only when you press Send alerts on the evacuation "
         "plan, switch alerts on while watching a live camera, or press a test button here.")
-tg, mail = st.columns(2)
+tg, mail = st.container(), st.container(border=True)  # stacked: the Telegram steps need the width
 with tg:
     st.markdown("**Telegram** (free, on your phone)")
     linked = st.session_state.get("telegram_chat")
     if linked:
         who = f" ({linked['name']})" if linked.get("name") else ""
         st.success(f"Alerts go to Telegram{who}.")
-        b1, b2 = st.columns(2)
-        if b1.button("Send a test message", key="tg_test", width="stretch"):
+        b1, b2, b3 = st.columns(3)
+        if b1.button("Send a sample alert", key="tg_sample", type="primary", width="stretch",
+                     help="A made-up Critical alert with a counted crowd photo, to see what your team would get."):
+            ok, message = notify.send_telegram(*sample_alert(), chat_id=linked["id"])
+            (st.success if ok else st.error)(message)
+        if b2.button("Send a test message", key="tg_test", width="stretch"):
             ok, message = notify.send_telegram("Crowd Shield test: alerts from this app reach this chat.",
                                                chat_id=linked["id"])
             (st.success if ok else st.error)(message)
-        if b2.button("Disconnect", key="tg_off", width="stretch"):
+        if b3.button("Disconnect", key="tg_off", width="stretch"):
             st.session_state.pop("telegram_chat", None)
             st.rerun()
     elif notify.telegram_configured():
@@ -71,10 +104,10 @@ with tg:
         if not link:
             st.warning("Telegram can't be reached right now. Try again in a minute.")
         else:
-            qr, how = st.columns([2, 3], vertical_alignment="center")
+            qr, how = st.columns([1, 2], vertical_alignment="center", gap="medium")
             png = io.BytesIO()
             segno.make(link).save(png, kind="png", scale=6, border=2, dark="#0f172a")
-            qr.image(png.getvalue(), width=190, caption="Opens your Crowd Shield bot")
+            qr.image(png.getvalue(), width="stretch", caption="Opens your Crowd Shield bot")
             app_link = notify.connect_link(code, via="app")
             how.markdown(f"**On your phone:** scan this code with the camera, then press **Start** in Telegram.\n\n"
                          f"**On this computer:** open the [Telegram app]({app_link}) or "
@@ -158,5 +191,5 @@ if st.button("Save contacts", type="primary", icon=":material/save:"):
                    "this browser session; save your session in Settings to keep them.")
         st.rerun()
 
-next_step("Count some people, then send the plan to your team.", "pages/3_Analysis.py",
+next_step("Count some people, then send the plan to your team.", "app_pages/3_Analysis.py",
           "Go to the evacuation plan and alerts", "/Analysis")
