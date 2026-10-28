@@ -163,11 +163,15 @@ def tick():
     state["seconds"], state["frame"] = time.time() - started, frame
     state["log"].append({"t": result["t"], **{z: r["count"] for z, r in result["zones"].items()},
                          "_risk": {z: r["risk"] for z, r in result["zones"].items()}})
+    photo = None  # the frame that raised the alert, zones coloured by risk, as the page shows it
+    if result["events"] and send_alerts:
+        levels = {z: r["risk"] for z, r in result["zones"].items()}
+        photo = cv2.imencode(".jpg", cv2.cvtColor(draw(frame, levels), cv2.COLOR_RGB2BGR),
+                             [cv2.IMWRITE_JPEG_QUALITY, 85])[1].tobytes()
     for event in result["events"]:
-        info = zones[event["zone"]]
         text = notify.alert_text(event["zone"], event["zone"], event["risk"], event["count"], event["per_m2"],
                                  None if event["eta_s"] is None else event["eta_s"] / 60)
-        sent = notify.broadcast(text, chat_id=telegram_chat()) if send_alerts else ["alerts are off"]
+        sent = notify.broadcast(text, photo, chat_id=telegram_chat()) if send_alerts else ["alerts are off"]
         state["alerts"].append({"time": time.strftime("%H:%M:%S"), "zone": event["zone"], "risk": event["risk"],
                                 "kind": event["kind"], "sent": "; ".join(sent)})
     state["last"] = result
