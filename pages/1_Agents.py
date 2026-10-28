@@ -75,17 +75,22 @@ with tg:
             png = io.BytesIO()
             segno.make(link).save(png, kind="png", scale=6, border=2, dark="#0f172a")
             qr.image(png.getvalue(), width=190, caption="Opens your Crowd Shield bot")
-            how.markdown("**Scan this with your phone's camera**, then press **Start** in Telegram. "
-                         "This page connects by itself.")
-            how.markdown(f"On this device instead: [open in Telegram]({link}), or "
-                         f"[add it to a team group]({group_link}), such as your police or volunteer group "
-                         "(you need to be the group's admin).")
-            how.caption("No Telegram yet? [Get it free](https://telegram.org/apps), then scan again.")
+            app_link = notify.connect_link(code, via="app")
+            how.markdown(f"**On your phone:** scan this code with the camera, then press **Start** in Telegram.\n\n"
+                         f"**On this computer:** open the [Telegram app]({app_link}) or "
+                         f"[Telegram Web]({notify.connect_link(code, via='web')}), then press **Start**.\n\n"
+                         f"**For a team group,** such as your police or volunteer group: "
+                         f"[add the bot to the group]({group_link}) "
+                         f"([from the Telegram app]({notify.connect_link(code, group=True, via='app')})). "
+                         "You need to be the group's admin.")
+            how.caption("This page connects by itself once you press Start. No Telegram yet? "
+                        "[Get it free](https://telegram.org/apps).")
             wait_for_telegram(code)
             bot = notify.bot_username()
             with st.expander("The link doesn't open?"):
                 st.markdown(f"Some Wi-Fi and office networks block Telegram's links (t.me), but the Telegram app "
-                            f"still works. Scan the code with your phone on mobile data, or do it by hand in the "
+                            f"still works. Use the Telegram app link above, scan the code with your phone on mobile "
+                            f"data, or do it by hand in the "
                             f"Telegram app:\n\n"
                             f"- **Just me:** search **@{bot}**, open it and send `/start {code}`\n"
                             f"- **A team group:** add **@{bot}** to the group, then send `/start@{bot} {code}` in "

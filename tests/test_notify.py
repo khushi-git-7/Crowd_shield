@@ -131,3 +131,6 @@ def test_the_connect_link_opens_the_bot_with_the_code(monkeypatch):
     code = notify.new_link_code()
     assert code.isalnum() and notify.connect_link(code) == f"https://t.me/CSBot?start={code}"
     assert notify.connect_link(code, group=True) == f"https://t.me/CSBot?startgroup={code}"
+    assert notify.connect_link(code, via="app") == f"tg://resolve?domain=CSBot&start={code}"
+    web = notify.connect_link(code, via="web")
+    assert web.startswith("https://web.telegram.org/") and f"start%3D{code}" in web

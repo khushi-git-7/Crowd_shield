@@ -156,8 +156,9 @@ def test_a_visitor_connects_their_own_telegram_and_alerts_go_there(monkeypatch):
     app = render(PAGES["Agents"])
     code = app.session_state.telegram_code
     text = " ".join(m.value for m in app.markdown)
-    assert f"https://t.me/CrowdShieldBot?start={code}" in text
     assert f"https://t.me/CrowdShieldBot?startgroup={code}" in text
+    assert f"tg://resolve?domain=CrowdShieldBot&start={code}" in text  # the Telegram app on this computer
+    assert "web.telegram.org" in text
     assert f"/start {code}" in text and f"/start@CrowdShieldBot {code}" in text  # for networks that block t.me
 
     assert any("Waiting for Start" in c.value for c in app.caption)

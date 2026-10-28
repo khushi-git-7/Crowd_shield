@@ -72,11 +72,23 @@ def new_link_code() -> str:
     return secrets.token_hex(8)
 
 
-def connect_link(code: str, group: bool = False) -> str | None:
+def connect_link(code: str, group: bool = False, via: str = "link") -> str | None:
     """The link that opens the bot with `code`: in a private chat, or (group=True) to add it to a group, such as
-    a team of police officers or volunteers, so one alert reaches all of them."""
+    a team of police officers or volunteers, so one alert reaches all of them.
+
+    `via`: "link" is the t.me link (phone camera, or any browser); "app" opens the Telegram app installed on
+    this computer directly, which also works where a network blocks t.me; "web" opens Telegram Web.
+    """
     name = bot_username()
-    return f"https://t.me/{name}?{'startgroup' if group else 'start'}={code}" if name else None
+    if not name:
+        return None
+    start = "startgroup" if group else "start"
+    app = f"tg://resolve?domain={name}&{start}={code}"
+    if via == "app":
+        return app
+    if via == "web":
+        return "https://web.telegram.org/k/#?tgaddr=" + urllib.parse.quote(app, safe="")
+    return f"https://t.me/{name}?{start}={code}"
 
 
 def find_chat(code: str) -> tuple[str, str] | None:
