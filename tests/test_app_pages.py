@@ -158,6 +158,7 @@ def test_a_visitor_connects_their_own_telegram_and_alerts_go_there(monkeypatch):
     text = " ".join(m.value for m in app.markdown)
     assert f"https://t.me/CrowdShieldBot?start={code}" in text
     assert f"https://t.me/CrowdShieldBot?startgroup={code}" in text
+    assert f"/start {code}" in text and f"/start@CrowdShieldBot {code}" in text  # for networks that block t.me
 
     next(b for b in app.button if b.label == "Done").click().run()  # nothing done in Telegram yet
     assert any("Not found yet" in w.value for w in app.warning) and "telegram_chat" not in app.session_state

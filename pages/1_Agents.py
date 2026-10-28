@@ -58,6 +58,14 @@ with tg:
                         f"[a team group]({group_link}), such as your police or volunteer group, then pick the "
                         "group (you need to be its admin).\n"
                         "2. Come back here and press **Done**.")
+            bot = notify.bot_username()
+            with st.expander("The link doesn't open?"):
+                st.markdown(f"Some Wi-Fi and office networks block Telegram's links (t.me), but the Telegram app "
+                            f"still works. Open the link on your phone using mobile data, or do it by hand in the "
+                            f"Telegram app:\n\n"
+                            f"- **Just me:** search **@{bot}**, open it and send `/start {code}`\n"
+                            f"- **A team group:** add **@{bot}** to the group, then send `/start@{bot} {code}` in "
+                            f"the group\n\nThen come back here and press **Done**.")
             if st.button("Done", key="tg_check", type="primary", icon=":material/link:"):
                 found = notify.find_chat(code)
                 if found:
