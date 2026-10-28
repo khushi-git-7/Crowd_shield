@@ -10,7 +10,7 @@ import streamlit as st
 # importing a new helper then fails. This script runs fresh on every page view, so it notices when
 # the code on disk changed and drops the app's own modules, which then load again, new.
 ROOT = Path(__file__).resolve().parent
-OWN_MODULES = ("ui", "shared_state", "detection", "emailer", "crowdshield")
+OWN_MODULES = ("ui", "shared_state", "detection", "emailer", "video_console", "crowdshield")
 
 
 def code_stamp() -> int:

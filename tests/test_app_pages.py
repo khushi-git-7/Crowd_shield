@@ -95,9 +95,10 @@ def test_benchmark_page_reports_the_india_pilot():
 def test_video_page_shows_the_analysed_example_straight_away():
     app = render(PAGES["Video"])
     assert [t.label for t in app.tabs] == ["Example: a busy Paris station", "Analyse your own clip"]
-    text = " ".join(m.value for m in app.markdown)
-    assert "Stairs" in text and "Concourse" in text and "people at most" in text
-    assert any("No surge" in s.value for s in app.success)
+    player = app.get("iframe")[0].proto.srcdoc  # the console: clip, overlay, side panel and timeline
+    assert "data:video/mp4;base64," in player and '"name":"Stairs"' in player and '"name":"Concourse"' in player
+    assert '"points":[[[' in player  # head points to draw on the clip
+    assert any(b.label == "Download the video with dots and zones" for b in app.get("download_button"))
 
 
 def test_photo_page_offers_instant_sample_photos():

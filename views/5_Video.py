@@ -13,7 +13,8 @@ import streamlit as st
 
 from crowdshield import counting
 from shared_state import GLOBAL_CSS, init_state
-from ui import kpi_cards, nav_link, page_header, section, working, zone_picker
+from ui import nav_link, page_header, section, working, zone_picker
+from video_console import show_console
 
 st.set_page_config(page_title="Analyse a video • Crowd Shield", page_icon=None, layout="wide")
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
@@ -23,7 +24,8 @@ page_header("Analyse a video", "See how a crowd changes second by second. Crowd 
             "colours each zone by how full it is, and raises an alarm if the crowd suddenly surges.", "Check a crowd")
 
 SAMPLES = Path(__file__).resolve().parent.parent / "assets" / "samples"
-SAMPLE_VIDEO = SAMPLES / "paris_saint_lazare_annotated.mp4"
+SAMPLE_VIDEO = SAMPLES / "paris_saint_lazare_annotated.mp4"  # for download
+SAMPLE_CLEAN = SAMPLES / "paris_saint_lazare_clean.mp4"  # what the player shows, with the analysis on top
 SAMPLE_DATA = SAMPLES / "paris_saint_lazare_analysis.json"
 SAMPLE_CREDIT = ("Clip: 15 s of \"2025-11-06 17-33-16 - Paris - Saint-Lazare\" by Baidax, "
                  "[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), via "
@@ -58,66 +60,13 @@ st.markdown("""
 
 
 # ── Shared: how a result is shown, for the example and for your own clip alike ──────────────────────
-def capacity_level(people, capacity):
-    from crowdshield.video_render import capacity_level as level
-
-    return level(people, capacity)
-
-
-def show_result(video, df: pd.DataFrame, events: list, capacities: dict, calibrated: bool,
-                handheld: bool = False, key: str = "r"):
-    left, right = st.columns([3, 2], gap="large")
-    with left:
-        st.video(video)
-    with right:
-        section("What happened")
-        for i, (zone, part) in enumerate(df.groupby("zone", sort=False)):
-            peak = part.loc[part["people"].idxmax()]
-            cap = capacities.get(zone)
-            level = peak.get("level") if calibrated else capacity_level(peak["people"], cap)
-            colour = LEVEL_HEX.get(level, ZONE_HEX[i % 4])
-            detail = (f"peak {peak['per_m2']:.1f} people per m² at {peak['t']:.0f} s" if calibrated else
-                      f"peak at {peak['t']:.0f} s" + (f", holds {cap} comfortably" if cap else ""))
-            st.markdown(
-                f"<div class='card' style='border-left:4px solid {colour};padding:.7rem .9rem;margin-bottom:.5rem'>"
-                f"<div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:.1rem .5rem'><b>{zone}</b>"
-                f"<span style='color:{colour};font-weight:800;font-size:.8rem;white-space:nowrap'>{level or ''}</span>"
-                f"</div>"
-                f"<div style='font-size:1.5rem;font-weight:800'>{peak['people']:.0f} "
-                f"<span style='font-size:.8rem;color:#64748b;font-weight:600'>people at most</span></div>"
-                f"<div style='font-size:.78rem;color:#64748b'>{detail} · average {part['people'].mean():.0f}</div>"
-                f"</div>", unsafe_allow_html=True)
-        if handheld:
-            st.info("Surge alarm off: the camera itself moves in this clip, so movement can't be judged.")
-        elif events:
-            for e in events:
-                st.error(f"Surge alarm at {e['t']:.1f} s: {e['event'].split(': ', 1)[-1]}")
-        else:
-            st.success("No surge: nobody suddenly started moving much faster than the crowd's normal pace.")
-
-    import altair as alt
-
-    section("Each zone over time", "Counted once a second." + (" Dashed lines: how many each zone holds "
-                                                                 "comfortably." if capacities and not calibrated else ""))
-    column, title = ("per_m2", "People per m²") if calibrated else ("people", "People in zone")
-    names = list(dict.fromkeys(df["zone"]))
-    colours = [ZONE_HEX[i % 4] for i in range(len(names))]
-    lines = alt.Chart(df).mark_line(strokeWidth=2.5, interpolate="monotone", point=True).encode(
-        x=alt.X("t:Q", title="Seconds into the clip"), y=alt.Y(f"{column}:Q", title=title),
-        color=alt.Color("zone:N", title=None, scale=alt.Scale(domain=names, range=colours),
-                        legend=alt.Legend(orient="top", labelFontSize=12, symbolStrokeWidth=3)),
-        tooltip=[alt.Tooltip("zone:N", title="Zone"), alt.Tooltip("t:Q", title="Second"),
-                 alt.Tooltip(f"{column}:Q", title=title, format=".1f")])
-    layers = [lines]
-    if capacities and not calibrated:
-        caps = pd.DataFrame([{"zone": z, "cap": c} for z, c in capacities.items() if c and z in names])
-        if len(caps):
-            layers.append(alt.Chart(caps).mark_rule(strokeDash=[5, 4], strokeWidth=1.5).encode(
-                y="cap:Q", color=alt.Color("zone:N", scale=alt.Scale(domain=names, range=colours), legend=None)))
-    if events and not handheld:
-        layers.append(alt.Chart(pd.DataFrame(events)).mark_rule(color="#ef4444", strokeWidth=2).encode(x="t:Q"))
-    st.altair_chart(alt.layer(*layers).resolve_legend(color="shared").properties(height=280), width="stretch")
-
+def show_result(clean: bytes, annotated: bytes | None, fps: float, size, zones: list[dict], rows: list[dict],
+                events: list, points, count_every, calibrated: bool, handheld: bool = False, key: str = "r"):
+    """The console (clean clip, analysis drawn live on top, side panel, timeline), then the details."""
+    show_console(clean, fps, size, zones, rows, [] if handheld else events, points, count_every, calibrated)
+    if handheld:
+        st.info("Surge alarm off: the camera itself moves in this clip, so movement can't be judged.")
+    df = pd.DataFrame(rows)
     if calibrated and not handheld:
         with st.expander("Walking speed, crowd pressure and time to danger"):
             from crowdshield.safety import HELBING_TURBULENCE_PRESSURE
@@ -133,10 +82,11 @@ def show_result(video, df: pd.DataFrame, events: list, capacities: dict, calibra
                             f"disaster) · {when}.")
     d1, d2 = st.columns(2)
     d1.download_button("Download the readings (CSV)", df.to_csv(index=False), "crowd_readings.csv", "text/csv",
-                       width="stretch", key=f"csv_{key}")
-    if isinstance(video, (bytes, bytearray)):
-        d2.download_button("Download the annotated video", video, "crowd_shield_video.mp4", "video/mp4",
-                           width="stretch", key=f"mp4_{key}")
+                       width="stretch", key=f"csv_{key}", icon=":material/table_view:")
+    if annotated:
+        d2.download_button("Download the video with dots and zones", annotated, "crowd_shield_video.mp4",
+                           "video/mp4", width="stretch", key=f"mp4_{key}", icon=":material/movie:",
+                           help="The clip with the analysis drawn in, to share or present.")
 
 
 tab_example, tab_own = st.tabs(["Example: a busy Paris station", "Analyse your own clip"])
@@ -145,9 +95,9 @@ tab_example, tab_own = st.tabs(["Example: a busy Paris station", "Analyse your o
 with tab_example:
     data = json.loads(SAMPLE_DATA.read_text(encoding="utf-8"))
     st.markdown("Fifteen seconds from a fixed camera above the concourse and stairs of Paris Saint-Lazare station, "
-                "analysed by Crowd Shield. **Press play.**")
-    show_result(SAMPLE_VIDEO.read_bytes(), pd.DataFrame(data["rows"]), data["events"],
-                {z["name"]: z["capacity"] for z in data["zones"]}, calibrated=False, key="example")
+                "analysed by Crowd Shield. **Press play**, or click the timeline to jump to any second.")
+    show_result(SAMPLE_CLEAN.read_bytes(), SAMPLE_VIDEO.read_bytes(), data["fps"], data["size"], data["zones"],
+                data["rows"], data["events"], data["points"], data["count_every"], calibrated=False, key="example")
     st.caption(SAMPLE_CREDIT + f" Analysed with the same code as your own clips, counting once a second with the {data['counter']}. "
                "The zone sizes (40 and 50 people) are examples, chosen for the demo.")
     nav_link("views/8_Live.py", "Want this on a camera that is live right now? Watch a live camera",
@@ -283,7 +233,7 @@ with tab_own:
         from crowdshield.config import NotEnoughMemory
         from crowdshield.geometry import GroundCalibration
         from crowdshield.monitor import VideoMonitor, Zone
-        from crowdshield.video_render import PointRecorder, render
+        from crowdshield.video_render import PointRecorder, encode_clean, render
 
         calib = None
         if corners is not None:
@@ -301,30 +251,38 @@ with tab_own:
         recorder = PointRecorder() if counter_name.startswith("point model") else None
         monitor = VideoMonitor(recorder or counter, fps, [Zone(n, p) for n, p in zones], calib=calib)
         path = clip_on_disk(data_bytes, suffix)
-        out_path = path + ".annotated.mp4"
+        out_path, clean_path = path + ".annotated.mp4", path + ".clean.mp4"
         try:
             rows, events = monitor.run(iter_frames(path, max_seconds), progress=lambda i: job.update(
                 f"Counting people: second {i / fps:.0f} of {seconds:.0f}", 0.85 * (i + 1) / n_frames)
                 if i % max(1, round(fps / 2)) == 0 else None)
-            job.update("Drawing the dots and zones on your clip...", 0.9)
+            job.update("Preparing your clip for the player...", 0.88)
+            encode_clean(iter_frames(path, max_seconds), fps, clean_path)
+            job.update("Drawing the dots and zones for the download...", 0.94)
             render(iter_frames(path, max_seconds), fps, out_path, zones, rows, [] if handheld else events,
                    {} if calib else capacities, recorder.points if recorder else None, monitor.count_every)
-            video = Path(out_path).read_bytes()
+            video, clean = Path(out_path).read_bytes(), Path(clean_path).read_bytes()
         except NotEnoughMemory as exc:
             job.done()
             st.error(str(exc))
             st.stop()
         finally:
-            for p in (path, out_path):
+            for p in (path, out_path, clean_path):
                 if os.path.exists(p):
                     os.remove(p)
         job.done()
-        st.session_state.video_result = {"settings": settings, "video": video, "rows": rows, "events": events,
-                                         "calibrated": calib is not None, "handheld": handheld,
-                                         "counter": counter_name}
+        st.session_state.video_result = {
+            "settings": settings, "video": video, "clean": clean, "rows": rows, "events": events, "fps": fps,
+            "size": [w, h], "count_every": monitor.count_every, "calibrated": calib is not None,
+            "handheld": handheld, "counter": counter_name,
+            "points": [[[round(float(c), 1), round(float(r), 1)] for r, c in pts] for pts in recorder.points]
+            if recorder else []}
         done = st.session_state.video_result
 
     section("3. The result")
-    show_result(done["video"], pd.DataFrame(done["rows"]), done["events"],
-                {} if done["calibrated"] else capacities, done["calibrated"], done["handheld"], key="own")
+    show_result(done["clean"], done["video"], done["fps"], done["size"],
+                [{"name": n, "polygon": poly, "capacity": None if done["calibrated"] else capacities.get(n)}
+                 for n, poly in zones],
+                done["rows"], done["events"], done["points"], done["count_every"], done["calibrated"],
+                done["handheld"], key="own")
     st.caption(f"Counted with the {done['counter']}, once a second.")
