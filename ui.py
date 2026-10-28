@@ -153,7 +153,25 @@ GLOBAL_CSS = """
   .hero-dots circle { animation: cs-float 3.6s ease-in-out infinite; }
   @keyframes cs-float { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
   @media (max-width: 1100px) { .hero-dots { display: none; } }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+  .kpi-grid .kpi { height: 100%; }
+  /* Rows of 4-5 boxes (start cards, zones, metrics) go two by two on mid-size screens, where Streamlit would
+     otherwise keep them side by side at 75-120 px each. Wrap such a row in st.container(key="wrap_..."). */
+  @media (min-width: 641px) and (max-width: 1150px) {
+    [class*="st-key-wrap_"] [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
+    [class*="st-key-wrap_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+      min-width: calc(50% - 1rem) !important; }
+    /* A map or table beside a narrow panel: one above the other instead (st.container(key="stack_...")). */
+    [class*="st-key-stack_"] [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
+    [class*="st-key-stack_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] { min-width: 100% !important; }
+  }
+  /* Button labels wrap instead of ending in "..." when a button is narrow. */
+  .stButton button p, .stDownloadButton button p { white-space: normal; }
   @media (max-width: 640px) {  /* phones: less frame, smaller type, numbers two by two */
+    [data-testid="stHeader"] { background: rgba(245,247,250,.92); backdrop-filter: blur(6px); }
+    /* The risk-limits table stays a grid on a phone, so each number box keeps its column heading. */
+    .st-key-limits [data-testid="stHorizontalBlock"] { flex-wrap: nowrap; gap: .4rem; }
+    .st-key-limits [data-testid="stColumn"] { min-width: 0 !important; }
     .main .block-container, [data-testid="stMainBlockContainer"] { padding-left: 1rem; padding-right: 1rem; padding-top: 3rem; }
     .hero { padding: 1.4rem 1.2rem 1.3rem; border-radius: 14px; }
     .hero h1 { font-size: 1.65rem !important; }
@@ -226,12 +244,14 @@ def page_header(title: str, subtitle: str = "", eyebrow: str = "", live: bool = 
 
 def kpi_cards(items: list[tuple], accents: list[str] | None = None) -> None:
     """A row of summary cards; each item is (label, value, sub). `accents` colours their left edge."""
-    cols = st.columns(len(items))
-    for i, (col, (label, value, sub)) in enumerate(zip(cols, items)):
+    cards = []
+    for i, (label, value, sub) in enumerate(items):
         accent = f"--accent:{accents[i]};" if accents and accents[i] else ""
-        col.markdown(f"<div class='kpi' style='{accent}'><div class='label'>{html.escape(str(label))}</div>"
-                     f"<div class='value'>{value}</div><div class='sub'>{sub}</div></div>",
-                     unsafe_allow_html=True)
+        cards.append(f"<div class='kpi' style='{accent}'><div class='label'>{html.escape(str(label))}</div>"
+                     f"<div class='value'>{value}</div><div class='sub'>{sub}</div></div>")
+    # One grid rather than st.columns: the cards keep a sensible width and flow onto a second row on narrow
+    # screens, instead of squeezing until the numbers are cut off.
+    st.markdown(f"<div class='kpi-grid'>{''.join(cards)}</div>", unsafe_allow_html=True)
 
 
 def section(title: str, caption: str = "") -> None:
@@ -323,7 +343,7 @@ def zone_picker(width: int, height: int, key: str, extra: dict | None = None,
     zones, capacities = [], {}
     for i, box in enumerate(boxes):
         default_name, fx0, fy0, fx1, fy1 = box[:5]
-        c1, c2 = st.columns([3, 2])
+        c1, c2 = st.columns(2)
         name = c1.text_input(f"Zone {i + 1} name", default_name, key=f"{key}_name_{layout}_{i}")
         capacities[name] = int(c2.number_input(
             "Holds comfortably", 1, 100_000, box[5] if len(box) > 5 else capacity, key=f"{key}_cap_{layout}_{i}",

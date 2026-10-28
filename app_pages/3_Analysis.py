@@ -65,7 +65,7 @@ kpi_cards([
 # ── Zones ──────────────────────────────────────────────────────────────────
 section("Zones", "Each zone's count against its limits (the marks on the bar are Moderate, High Risk and "
         "Critical). " + limits_note())
-cols = st.columns(len(seg_info))
+cols = st.container(key="wrap_zonecards").columns(len(seg_info))
 for col, (seg, info) in zip(cols, seg_info.items()):
     t, count, colour = info["thresholds"], info["count"], RISK_COLORS[info["risk"]]
     scale = t["critical"] * 1.25

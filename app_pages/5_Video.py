@@ -80,8 +80,9 @@ def show_result(video, df: pd.DataFrame, events: list, capacities: dict, calibra
                       f"peak at {peak['t']:.0f} s" + (f", holds {cap} comfortably" if cap else ""))
             st.markdown(
                 f"<div class='card' style='border-left:4px solid {colour};padding:.7rem .9rem;margin-bottom:.5rem'>"
-                f"<div style='display:flex;justify-content:space-between'><b>{zone}</b>"
-                f"<span style='color:{colour};font-weight:800;font-size:.8rem'>{level or ''}</span></div>"
+                f"<div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:.1rem .5rem'><b>{zone}</b>"
+                f"<span style='color:{colour};font-weight:800;font-size:.8rem;white-space:nowrap'>{level or ''}</span>"
+                f"</div>"
                 f"<div style='font-size:1.5rem;font-weight:800'>{peak['people']:.0f} "
                 f"<span style='font-size:.8rem;color:#64748b;font-weight:600'>people at most</span></div>"
                 f"<div style='font-size:.78rem;color:#64748b'>{detail} · average {part['people'].mean():.0f}</div>"
@@ -130,7 +131,7 @@ def show_result(video, df: pd.DataFrame, events: list, capacities: dict, calibra
                 st.markdown(f"**{zone}**: walking {r['speed']:.2f} m/s · crowd pressure {r['pressure']:.3f}/s² "
                             f"(turbulent pushing began above {HELBING_TURBULENCE_PRESSURE}/s² at the 2006 Hajj "
                             f"disaster) · {when}.")
-    d1, d2, _ = st.columns([1, 1, 2])
+    d1, d2 = st.columns(2)
     d1.download_button("Download the readings (CSV)", df.to_csv(index=False), "crowd_readings.csv", "text/csv",
                        width="stretch", key=f"csv_{key}")
     if isinstance(video, (bytes, bytearray)):

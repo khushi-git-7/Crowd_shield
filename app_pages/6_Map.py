@@ -13,7 +13,7 @@ from crowdshield.risk import thresholds_from_area
 from crowdshield.sitemap import (assess, list_sites, scenario_counts, site_from_drawings,
                                  timeline, to_geojson)
 from shared_state import FRUIN_PRESETS, GLOBAL_CSS, RISK_COLORS, SEGMENTS, init_state
-from ui import compact, next_step, page_header
+from ui import compact, kpi_cards, next_step, page_header
 
 st.set_page_config(page_title="Site Map • Crowd Shield", page_icon=None, layout="wide")
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
@@ -26,11 +26,11 @@ st.markdown("""
            padding:.6rem .9rem; font-size:.85rem; margin:.2rem 0 1rem; }
   .zone-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:.65rem .75rem;
                margin-bottom:.5rem; }
-  .zone-card .top { display:flex; align-items:center; gap:.55rem; }
+  .zone-card .top { display:flex; align-items:center; gap:.3rem .55rem; flex-wrap:wrap; }
   .zone-card .badge { width:24px; height:24px; border-radius:7px; color:#fff; font-weight:800; font-size:.78rem;
                       display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .zone-card .name { font-weight:700; font-size:.84rem; color:#0f172a; line-height:1.2; flex:1; }
-  .zone-card .risk { font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; }
+  .zone-card .name { font-weight:700; font-size:.84rem; color:#0f172a; line-height:1.2; flex:1; min-width:0; }
+  .zone-card .risk { white-space:nowrap; font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; }
   .zone-card .meta { display:flex; justify-content:space-between; font-size:.74rem; color:#64748b;
                      margin:.4rem 0 .3rem; font-variant-numeric: tabular-nums; }
   .bar { position:relative; height:6px; border-radius:99px; background:#f1f5f9; overflow:visible; }
@@ -63,7 +63,7 @@ SIM, MINE = "An example surge (made-up numbers)", "My counted photos"
 BEST, NEAREST = "Best overall", "Nearest zone first"
 site_options = list(SITES) + (["My site"] if "custom_site" in st.session_state else []) + ["Draw a new site"]
 with st.container(border=True):
-    c1, c2, c3, c4 = st.columns([5, 3, 3, 3])
+    c1, c2, c3, c4 = st.container(key="wrap_filters").columns([5, 3, 3, 3])
     with c1:
         site_choice = st.selectbox("Site", site_options,
                                    help="The demo sites are real places; their zones are drawn for illustration. "
@@ -220,17 +220,13 @@ kpis = [
     ("People to move", compact(moving) if plans else "0",
      f"{len(plans)} route(s) planned" if plans else "no moves needed"),
 ]
-cols = st.columns(len(kpis))
-for col, (label, value, sub) in zip(cols, kpis):
-    col.markdown(f"<div class='kpi'><div class='label'>{label}</div>"
-                 f"<div class='value'>{value}</div><div class='sub'>{sub}</div></div>",
-                 unsafe_allow_html=True)
+kpi_cards(kpis)
 st.markdown(f"<div style='margin:.6rem 0 .2rem'>{chip}</div>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Map + zone panel
 # ---------------------------------------------------------------------------
-map_col, panel_col = st.columns([7, 3], gap="medium")
+map_col, panel_col = st.container(key="stack_map").columns([7, 3], gap="medium")
 with map_col:
     show_names = st.toggle("Zone names on the map", value=False)
     m = base_map(site["centre"], site.get("zoom", 16))
@@ -283,7 +279,7 @@ with map_col:
         for k in RISK_ORDER)
     m.get_root().html.add_child(folium.Element(
         f"<div class='map-legend'>{legend}<div><i style='background:{GREY}'></i>Not counted</div></div>"))
-    MiniMap(toggle_display=True, position="bottomright", zoom_level_offset=-5).add_to(m)
+    MiniMap(toggle_display=True, position="bottomright", zoom_level_offset=-5, width=110, height=110).add_to(m)
     folium.LayerControl(collapsed=True).add_to(m)
     st_folium(m, height=640, use_container_width=True, returned_objects=[], key="site_map")
 

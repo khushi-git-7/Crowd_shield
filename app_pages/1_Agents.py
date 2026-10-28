@@ -174,7 +174,7 @@ new_vals = {}
 with st.container(border=True):
     for seg in SEGMENTS:
         saved = st.session_state.agents.get(seg, "")
-        c1, c2, c3 = st.columns([3, 4, 2], vertical_alignment="center")
+        c1, c2, c3 = st.columns([2, 4, 3], vertical_alignment="center")
         c1.markdown(f"**{zone_label(seg)}**")
         new_vals[seg] = c2.text_input(f"Contact email for zone {seg}", placeholder="name@example.com",
                                       label_visibility="collapsed", key=f"agent_input_{seg}")
