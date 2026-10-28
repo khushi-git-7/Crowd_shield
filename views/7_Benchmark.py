@@ -133,5 +133,5 @@ with st.expander("How this is measured"):
 - **Accuracy:** 1 − total absolute error ÷ total true count, the same measure as on ShanghaiTech.
 """)
 
-next_step("Try it yourself on a photo of a crowd, or on one of these Indian samples.", "app_pages/2_Upload.py",
+next_step("Try it yourself on a photo of a crowd, or on one of these Indian samples.", "views/2_Upload.py",
           "Count people in a photo", "/Upload")

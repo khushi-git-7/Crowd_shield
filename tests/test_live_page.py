@@ -10,7 +10,7 @@ pytest.importorskip("cv2")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-LIVE = next((ROOT / "app_pages").glob("*_Live.py"))
+LIVE = next((ROOT / "views").glob("*_Live.py"))
 
 
 def render() -> AppTest:

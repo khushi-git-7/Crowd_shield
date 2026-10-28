@@ -27,7 +27,7 @@ agents = st.session_state.agents
 
 if not data:
     st.info("Nothing counted yet. Count the people in a photo of each zone first; the plan appears here.")
-    nav_link("app_pages/2_Upload.py", "Count people in a photo", ":material/photo_camera:", "/Upload")
+    nav_link("views/2_Upload.py", "Count people in a photo", ":material/photo_camera:", "/Upload")
     st.stop()
 
 st.markdown("""
@@ -170,7 +170,7 @@ if not pairings:
 elif not channels:
     st.warning("No alert channel is set up. Connect your Telegram (free, on your phone) or add Gmail in Team and alerts, then come "
                "back here to send.")
-    nav_link("app_pages/1_Agents.py", "Set up alerts in Team and alerts", ":material/groups:", "/Agents")
+    nav_link("views/1_Agents.py", "Set up alerts in Team and alerts", ":material/groups:", "/Agents")
 else:
     plan_lines = []
     if "Telegram" in channels:
@@ -238,5 +238,5 @@ for seg, info in seg_info.items():
 st.download_button("Download the counts and plan (CSV)", buf.getvalue(), file_name="crowd_shield_report.csv",
                    mime="text/csv", icon=":material/download:")
 
-next_step("See these zones on a satellite map, with the walking routes for each move.", "app_pages/6_Map.py",
+next_step("See these zones on a satellite map, with the walking routes for each move.", "views/6_Map.py",
           "Open the site map", "/Map", ":material/map:")
