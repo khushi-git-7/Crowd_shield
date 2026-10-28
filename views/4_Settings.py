@@ -42,7 +42,7 @@ with st.expander("Work out limits from each zone's area"):
     st.caption(f"{preset_name}: Moderate from {preset['moderate']}, High Risk from {preset['high']} and Critical "
                f"from {preset['critical']} people per m².")
     areas = {}
-    for col, seg in zip(st.columns(5), SEGMENTS):
+    for col, seg in zip(st.container(key="wrap_areas").columns(5), SEGMENTS):
         areas[seg] = col.number_input(f"{zone_label(seg)} (m²)", 0, 1_000_000,
                                       int(st.session_state.seg_areas.get(seg, 0)), 1, key=f"area_{seg}")
 
@@ -62,7 +62,7 @@ for seg in SEGMENTS:  # first visit: fill the boxes from the saved limits
     if f"lim_moderate_{seg}" not in st.session_state:
         show_limits({seg: st.session_state.thresholds.get(seg, DEFAULT_THRESHOLDS)})
 
-with st.container(border=True):
+with st.container(border=True, key="limits"):
     widths = [3, 2, 2, 2]
     for col, title in zip(st.columns(widths), ["Zone"] + [label for _, label in LEVELS]):
         col.markdown(f"<div class='sec' style='margin:.1rem 0'>{title}</div>", unsafe_allow_html=True)
@@ -171,7 +171,7 @@ with st.expander("About this server (for the curious)"):
         how = "one pass" if fit >= work else f"tiles of {fit} px"
     except config.NotEnoughMemory:
         how = "none fits"
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4, c5 = st.container(key="wrap_server").columns(5)
     c1.metric("Memory limit", gb(limit))
     c2.metric("In use", gb(used), help="Memory used by everything running on this server.")
     c3.metric("This app", gb(own))

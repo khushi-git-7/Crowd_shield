@@ -226,3 +226,16 @@ def test_map_warns_when_its_rule_differs_from_the_plan_page():
     next(b for b in app.selectbox if b.label == "Crowd numbers").set_value("My counted photos").run()
     assert not app.exception, [e.message for e in app.exception]
     assert any("Apply map areas and routes" in i.value for i in app.info)
+
+
+def test_a_connected_user_can_send_themselves_a_sample_alert(monkeypatch):
+    from crowdshield import notify
+
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token")
+    sent = []
+    monkeypatch.setattr(notify, "send_telegram",
+                        lambda text, image=None, chat_id=None: sent.append((text, image, chat_id)) or (True, "Sent."))
+    app = render(PAGES["Agents"], telegram_chat={"id": "5", "name": "Asha"})
+    next(b for b in app.button if b.label == "Send a sample alert").click().run()
+    text, image, chat = sent[-1]
+    assert chat == "5" and "SAMPLE ALERT" in text and "CRITICAL" in text and image[:2] == b"\xff\xd8"  # a JPEG

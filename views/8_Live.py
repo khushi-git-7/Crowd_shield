@@ -113,7 +113,7 @@ with left:
 
 # ---- 3. Run ------------------------------------------------------------------
 st.markdown("---")
-c1, c2, c3 = st.columns([2, 2, 3])
+c1, c2, c3 = st.columns(3)
 interval = c1.slider("Seconds between counts", MIN_INTERVAL, 300, max(MIN_INTERVAL, 45),
                      help="Counting a frame takes a few seconds to a minute depending on the server, so "
                           f"on this app it can't go below {MIN_INTERVAL} s.")

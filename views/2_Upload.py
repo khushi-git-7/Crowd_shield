@@ -58,7 +58,7 @@ if samples:
 
             img = cv2.imread(str(benchmark.INDIA / "images" / shown["image"]))
             overlay = render_overlay(img, [], [], None, benchmark.points_rc(shown["model_points"]))
-            left, right = st.columns([3, 1])
+            left, right = st.columns([2, 1])
             left.image(cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB), width="stretch")
             right.metric("Model count", f"{shown['model']:.0f}")
             right.metric("Counted by hand", f"{shown['true']}")
@@ -69,7 +69,7 @@ if samples:
 section("1. Add photos", f"A zone is one part of your site, such as a gate, a ghat or a platform. Put photos of "
         f"the same part in the same zone (up to {MAX_IMAGES_PER_SEGMENT}, JPG or PNG). Zones without photos are "
         "skipped.")
-seg_cols = st.columns(5)
+seg_cols = st.container(key="wrap_zones").columns(5)
 for col, seg in zip(seg_cols, SEGMENTS):
     with col:
         st.markdown(f"<div style='font-weight:800;font-size:.85rem;color:#334155;margin-bottom:.3rem;"
@@ -144,7 +144,7 @@ data = st.session_state.crowd_data
 if data:
     section("3. Results", "The photo with the most people in each zone, with a dot on every head. "
             + limits_note())
-    cols = st.columns(len(data))
+    cols = st.container(key="wrap_results").columns(len(data))
     for col, (seg, d) in zip(cols, data.items()):
         risk = risk_level(d["count"], get_seg_thresholds(seg))
         with col:

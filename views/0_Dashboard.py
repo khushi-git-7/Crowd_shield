@@ -55,7 +55,7 @@ START = [
     ("map", "I'm just exploring", "Open the Kumbh Mela site map and play a crowd surge forward.",
      "views/6_Map.py", "Open the site map", "/Map"),
 ]
-for col, (ic, title, body, target, label, url) in zip(st.columns(4), START):
+for col, (ic, title, body, target, label, url) in zip(st.container(key="wrap_start").columns(4), START):
     with col:
         st.markdown(f"<div class='feature-card' style='min-height:215px'><div class='feature-icon'>"
                     f"<span style=\"font-family:'Material Symbols Rounded';font-size:22px;line-height:1\">{ic}</span></div>"
@@ -73,7 +73,7 @@ STEPS = [
     ("4", "Act early", "It plans where to move people, only along routes they can walk, and alerts each "
      "zone's team by Telegram or email."),
 ]
-for col, (n, title, body) in zip(st.columns(4), STEPS):
+for col, (n, title, body) in zip(st.container(key="wrap_how").columns(4), STEPS):
     col.markdown(f"<div class='card' style='height:100%'><div style='font-weight:800;color:#0d9488'>{n}</div>"
                  f"<div style='font-weight:700;margin:.2rem 0'>{title}</div>"
                  f"<div style='font-size:.85rem;color:#64748b;line-height:1.55'>{body}</div></div>",
