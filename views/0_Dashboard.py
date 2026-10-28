@@ -8,7 +8,7 @@ import streamlit as st
 from detection import risk_level
 from crowdshield.notify import ready_channels
 from shared_state import GLOBAL_CSS, RISK_COLORS, SEGMENTS, get_seg_thresholds, init_state, telegram_chat, zone_label
-from ui import compact, kpi_cards, nav_link, risk_pill, section
+from ui import BRAND, compact, kpi_cards, nav_link, risk_pill, section
 
 st.set_page_config(page_title="Crowd Shield", page_icon=None, layout="wide")
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
@@ -28,7 +28,7 @@ hero_dots = f"<svg class='hero-dots' viewBox='0 0 300 190'>{''.join(dots)}</svg>
 
 st.markdown(f"""
 <div class="hero">
-  <div class="hero-grid"></div>{hero_dots}
+  <div class="hero-grid"></div>{hero_dots}{BRAND}
   <div class="eyebrow"><span class="live-dot"></span>Crowd safety for Indian public spaces</div>
   <h1>See crowd danger before it becomes a crush.</h1>
   <p>Crowd Shield counts the people in camera pictures, works out how crowded each part of a site is,
