@@ -112,7 +112,9 @@ section("Evacuation plan",
         "Worked out by the optimiser, which moves as many people as the other zones can take along the "
         "shortest walks. " + ("It uses the routes from your site map." if adjacency else
                               "No site map is applied, so it treats every zone as reachable from every other; "
-                              "apply a map on Site map to use real walking routes."))
+                              "apply a map on Site map to use real walking routes.")
+        + " It says how many people to move and where, not how long it takes: it doesn't know exit widths or "
+          "walking times, so a trained person decides how to carry it out.")
 
 
 def contact(seg):
