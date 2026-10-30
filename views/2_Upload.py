@@ -8,7 +8,7 @@ from crowdshield import benchmark
 from crowdshield.config import COUNTER_LABELS, NotEnoughMemory
 from crowdshield.points import on_tile_progress
 from detection import process_segment
-from shared_state import (GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, SEGMENTS, VIEW_SHARES, init_state, ist_now, limits_note, whole_zone_limits, zone_risk, zone_title,
+from shared_state import (DEFAULT_LIMITS, DEFAULT_THRESHOLDS, GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, SEGMENTS, VIEW_SHARES, init_state, ist_now, limits_note, whole_zone_limits, zone_risk, zone_title,
                           zone_label)
 from ui import next_step, page_header, risk_pill, section, working
 
@@ -128,6 +128,10 @@ if run:
             done_photos += len(img_list)
     st.success("Counted: " + " · ".join(f"{zone_label(seg)} {r['count']:,} people" for seg, r in results.items()))
     st.session_state.crowd_data = results
+    if st.session_state.pop("example_event", None):  # its names and limits were made up
+        st.session_state.pop("zone_names", None)
+        st.session_state.thresholds = {s: dict(DEFAULT_THRESHOLDS) for s in SEGMENTS}
+        st.session_state.limits_source = DEFAULT_LIMITS
 
     seg_results = {seg: {"count": r["count"], "risk": zone_risk(seg, r["count"])[0]}
                    for seg, r in results.items()}

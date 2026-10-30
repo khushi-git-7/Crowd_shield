@@ -280,3 +280,13 @@ def test_saying_how_much_is_in_view_scales_the_limits():
     plan = render(PAGES["Analysis"], crowd_data={"A": zone_result(10000)},
                   zone_view=dict(app.session_state.zone_view), **MAP_LIMITS)
     assert "HIGH RISK" in " ".join(block.value for block in plan.markdown)
+
+
+def test_the_example_event_shows_the_whole_plan_with_no_photos():
+    app = render(PAGES["Analysis"])
+    next(b for b in app.button if b.label == "Or load the example event").click().run()
+    assert not app.exception, [e.message for e in app.exception]
+    text = " ".join(block.value for block in app.markdown)
+    assert "CRITICAL" in text and "HIGH RISK" in text and "RECEIVING" in text and "nowhere safe" not in text
+    assert any("Example event" in i.value for i in app.info)
+    assert "EXAMPLE, not a real event." in app.code[0].value

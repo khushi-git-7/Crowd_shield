@@ -6,7 +6,7 @@ import random
 import streamlit as st
 
 from crowdshield.notify import ready_channels
-from shared_state import GLOBAL_CSS, RISK_COLORS, SEGMENTS, init_state, telegram_chat, zone_label, zone_risk
+from shared_state import GLOBAL_CSS, RISK_COLORS, SEGMENTS, init_state, load_example_event, telegram_chat, zone_label, zone_risk
 from ui import BRAND, compact, kpi_cards, nav_link, risk_pill, section
 
 st.set_page_config(page_title="Crowd Shield", page_icon=None, layout="wide")
@@ -60,6 +60,11 @@ for col, (ic, title, body, target, label, url) in zip(st.container(key="wrap_sta
                     f"<span style=\"font-family:'Material Symbols Rounded';font-size:22px;line-height:1\">{ic}</span></div>"
                     f"<h3>{title}</h3><p>{body}</p></div>", unsafe_allow_html=True)
         nav_link(target, label, ":material/arrow_forward:", url)
+
+st.markdown("**No photos? See the whole thing in one click.** Load a five-zone example event, with counts, an "
+            "evacuation plan and a preview of the alert.")
+if st.button("Load the example event", icon=":material/play_circle:", on_click=load_example_event):
+    st.switch_page("views/3_Analysis.py")
 
 # ── How it works ───────────────────────────────────────────────────────────
 section("How it works")
