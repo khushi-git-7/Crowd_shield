@@ -11,7 +11,7 @@ from crowdshield import notify
 from crowdshield.config import COUNTER_LABELS
 from crowdshield.risk import UNKNOWN, plan_optimal
 from emailer import build_critical_email, build_receiving_email, email_configured, send_email
-from shared_state import GLOBAL_CSS, RISK_COLORS, SEGMENTS, get_seg_thresholds, init_state, limits_note, telegram_chat, zone_label, zone_risk, zone_title
+from shared_state import GLOBAL_CSS, EXAMPLE_NOTE, RISK_COLORS, SEGMENTS, get_seg_thresholds, init_state, limits_note, load_example_event, telegram_chat, zone_label, zone_risk, zone_title
 from ui import compact, kpi_cards, nav_link, next_step, page_header, risk_pill, section
 
 st.set_page_config(page_title="Evacuation plan and alerts • Crowd Shield", page_icon=None, layout="wide")
@@ -27,7 +27,11 @@ agents = st.session_state.agents
 if not data:
     st.info("Nothing counted yet. Count the people in a photo of each zone first; the plan appears here.")
     nav_link("views/2_Upload.py", "Count people in a photo", ":material/photo_camera:", "/Upload")
+    st.button("Or load the example event", icon=":material/play_circle:", on_click=load_example_event)
     st.stop()
+
+if st.session_state.get("example_event"):
+    st.info(EXAMPLE_NOTE, icon=":material/science:")
 
 st.markdown("""
 <style>
@@ -165,7 +169,8 @@ def peak_image(seg):
 
 def team_message():
     """One short message for the team chat: every zone that needs action and where its people go."""
-    lines = [f"Crowd Shield: {len(at_risk)} zone(s) need action"]
+    lines = [("EXAMPLE, not a real event. " if st.session_state.get("example_event") else "")
+             + f"Crowd Shield: {len(at_risk)} zone(s) need action"]
     for seg in at_risk:
         info = seg_info[seg]
         moves = [f"~{p['move']:,} to {p['target']}" if p["target"] else f"~{p['move']:,} with nowhere to go"
@@ -176,6 +181,9 @@ def team_message():
     return "\n".join(lines)
 
 
+if pairings:
+    with st.expander("Preview the alert", expanded=not channels):
+        st.code(team_message(), language=None)
 if not pairings:
     st.success("No zone is at High Risk or Critical, so there is nothing to send.")
 elif not channels:

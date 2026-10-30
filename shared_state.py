@@ -100,6 +100,40 @@ def zone_risk(seg: str, count: int) -> tuple[str, dict]:
     return judge(count, limits, view_share(seg)) if whole_zone_limits() else (risk_level(count, limits), limits)
 
 
+EXAMPLE_EVENT = {"A": ("IN_03.jpg", "Bathing ghat"), "B": ("IN_08.jpg", "Railway approach"),
+                 "C": ("IN_05.jpg", "Main road"), "D": ("IN_21.jpg", "Riverside"), "E": ("IN_12.jpg", "Market street")}
+EXAMPLE_LIMITS = {"moderate": 200, "high": 400, "critical": 800}
+EXAMPLE_NOTE = ("Example event: five real Indian crowd photos from different places, standing in for one site, with "
+                "counts made in advance at full detail. The zone names and limits are made up. Count your own photos "
+                "to replace it.")
+
+
+def load_example_event() -> None:
+    """Fill all five zones from the sample photos, so the plan can be seen without any photos of your own."""
+    import cv2
+
+    from crowdshield import benchmark
+    from crowdshield.detection import render_overlay
+
+    rows = {r["image"]: r for r in benchmark.load()}
+    data = {}
+    for seg, (image, _) in EXAMPLE_EVENT.items():
+        row = rows[image]
+        img = cv2.imread(str(benchmark.INDIA / "images" / image))
+        overlay = render_overlay(img, [], [], None, benchmark.points_rc(row["model_points"]))
+        count = round(row["model"])
+        data[seg] = {"count": count, "body_count": count, "head_count": 0, "image_count": 1, "model_key": "points",
+                     "per_image": [{"count": count, "body_count": count, "head_count": 0, "overlay": overlay,
+                                    "model_key": "points"}],
+                     "per_img_sources": ["ground"], "combine": "sum", "counter": "points"}
+    st.session_state.crowd_data = data
+    st.session_state.zone_names = {seg: name for seg, (_, name) in EXAMPLE_EVENT.items()}
+    st.session_state.thresholds = {seg: dict(EXAMPLE_LIMITS) for seg in SEGMENTS}
+    st.session_state.limits_source = "the example event (made-up limits)"
+    st.session_state.zone_adjacency = None
+    st.session_state.example_event = True
+
+
 def zone_title(seg: str) -> str:
     """HTML for a zone card's title: the letter, and its place name on its own line so narrow cards never cut it."""
     import html
