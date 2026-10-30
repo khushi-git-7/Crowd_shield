@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .config import REPO_ROOT
 from .geo import adjacency, centroid, haversine_m, ring_area_m2
-from .risk import plan_optimal, plan_relocations, risk_level, route, thresholds_from_area
+from .risk import judge, plan_optimal, plan_relocations, risk_level, route, thresholds_from_area
 
 SITES_DIR = REPO_ROOT / "sites"
 DEMO_SITE = SITES_DIR / "kumbh_sangam.json"
@@ -69,13 +69,14 @@ def list_sites() -> list[dict]:
 
 
 def assess(site: dict, counts: dict, preset: dict, touch_m: float | None = None,
-           planner: str = "optimal") -> dict:
+           planner: str = "optimal", shares: dict | None = None) -> dict:
     """Everything the map shows, from zone shapes, people counts and a density standard.
 
     Returns {"zones": {zone: row}, "adjacency": graph, "plans": [...], "distance_m": {...}} where each
     row has the zone's name, ring, centre, area_m2, count, per_m2, risk and
     thresholds, and each plan from plan_relocations gains a "path" of zones to
     walk through. Zones without a count are kept for drawing, with count None.
+    `shares` is for counts from photos: how much of each zone they show, None if unknown.
     """
     rings = {z: info["ring"] for z, info in site["zones"].items()}
     # A site can say how far apart zones may be and still connect (streets between them).
@@ -85,6 +86,11 @@ def assess(site: dict, counts: dict, preset: dict, touch_m: float | None = None,
         area = ring_area_m2(info["ring"])
         thresholds = thresholds_from_area(area, preset)
         count = counts.get(z)
+        risk = None if count is None else risk_level(count, thresholds)
+        share = 1.0
+        if shares is not None and count is not None:
+            share = shares.get(z)
+            risk, thresholds = judge(count, thresholds, share)
         rows[z] = {
             "name": info.get("name", f"Zone {z}"),
             "ring": info["ring"],
@@ -92,8 +98,8 @@ def assess(site: dict, counts: dict, preset: dict, touch_m: float | None = None,
             "area_m2": area,
             "thresholds": thresholds,
             "count": count,
-            "per_m2": None if count is None else count / area,
-            "risk": None if count is None else risk_level(count, thresholds),
+            "per_m2": None if count is None else count / (area * (share or 1.0)),
+            "risk": risk,
         }
     counted = {z: r for z, r in rows.items() if r["count"] is not None}
     distance = {(a, b): haversine_m(rows[a]["centre"], rows[b]["centre"])

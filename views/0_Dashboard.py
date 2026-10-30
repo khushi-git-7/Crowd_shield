@@ -5,9 +5,8 @@ import random
 
 import streamlit as st
 
-from detection import risk_level
 from crowdshield.notify import ready_channels
-from shared_state import GLOBAL_CSS, RISK_COLORS, SEGMENTS, get_seg_thresholds, init_state, telegram_chat, zone_label
+from shared_state import GLOBAL_CSS, RISK_COLORS, SEGMENTS, init_state, telegram_chat, zone_label, zone_risk
 from ui import BRAND, compact, kpi_cards, nav_link, risk_pill, section
 
 st.set_page_config(page_title="Crowd Shield", page_icon=None, layout="wide")
@@ -85,7 +84,7 @@ data = st.session_state.crowd_data
 history = st.session_state.get("detection_history", [])
 if data:
     assigned = sum(1 for v in agents.values() if v)
-    risks = {seg: risk_level(d["count"], get_seg_thresholds(seg)) for seg, d in data.items()}
+    risks = {seg: zone_risk(seg, d["count"])[0] for seg, d in data.items()}
     at_risk = [s for s, r in risks.items() if r in ("High Risk", "Critical")]
     channels = ready_channels(telegram_chat())
     section("Your zones right now", "From the photos you counted in this session.")

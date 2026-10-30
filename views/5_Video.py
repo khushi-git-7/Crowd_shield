@@ -52,7 +52,7 @@ st.markdown("""
   <div class="step"><b>1</b><span>Choose a clip</span><p>From a camera that stays still: CCTV, a drone holding
     position, or a phone on a stand.</p></div>
   <div class="step"><b>2</b><span>Mark the zones</span><p>Pick a layout (left and right, four quarters...) and
-    how many people each zone holds comfortably.</p></div>
+    the number of people at which each zone is full.</p></div>
   <div class="step"><b>3</b><span>Watch the result</span><p>Your clip with every head marked, zones turning
     amber and red as they fill, and a chart of each zone over time.</p></div>
 </div>

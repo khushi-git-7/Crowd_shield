@@ -263,7 +263,7 @@ function update() {
     const share = D.calibrated ? Math.min((rd.per_m2 || 0) / 5, 1) : (z.cap ? Math.min(rd.people / z.cap, 1) : 0);
     el.querySelector('.bar i').style.width = (share * 100).toFixed(0) + '%';
     const pk = peaks[z.name];
-    el.querySelector('.sub').textContent = (z.cap && !D.calibrated ? `holds ${z.cap} comfortably · ` : '') +
+    el.querySelector('.sub').textContent = (z.cap && !D.calibrated ? `full at ${z.cap} · ` : '') +
       `peak ${Math.round(pk.people)} at ${pk.t.toFixed(0)} s`;
   });
   document.getElementById('total').textContent = Math.round(total);

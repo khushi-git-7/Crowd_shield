@@ -17,6 +17,7 @@ RISK_STYLE = {  # text colour, background, border
     "Moderate":  ("#b45309", "#fffbeb", "#fde68a"),
     "High Risk": ("#c2410c", "#fff7ed", "#fed7aa"),
     "Critical":  ("#b91c1c", "#fef2f2", "#fecaca"),
+    "Unknown":   ("#475569", "#f1f5f9", "#cbd5e1"),
 }
 
 GLOBAL_CSS = """
@@ -366,9 +367,9 @@ def zone_picker(width: int, height: int, key: str, extra: dict | None = None,
         c1, c2 = st.columns(2)
         name = c1.text_input(f"Zone {i + 1} name", default_name, key=f"{key}_name_{layout}_{i}")
         capacities[name] = int(c2.number_input(
-            "Holds comfortably", 1, 100_000, box[5] if len(box) > 5 else capacity, key=f"{key}_cap_{layout}_{i}",
-            help="How many people this part of the picture holds comfortably. A zone turns amber at half of it, "
-                 "orange at three quarters and red when full."))
+            "Full at (people)", 1, 100_000, box[5] if len(box) > 5 else capacity, key=f"{key}_cap_{layout}_{i}",
+            help="The most people this part of the picture should hold. A zone turns amber at half of it, orange at "
+                 "three quarters and red when it reaches this number."))
         if layout == "Custom boxes":
             x0, x1 = st.slider(f"{name}: left to right (%)", 0, 100, (int(i * 100 / len(boxes)),
                                int((i + 1) * 100 / len(boxes))), key=f"{key}_x_{i}")

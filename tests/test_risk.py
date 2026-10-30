@@ -1,7 +1,7 @@
 import pytest
 
 from crowdshield.config import FRUIN_PRESETS
-from crowdshield.risk import (combine_counts, plan_relocations, risk_level, route,
+from crowdshield.risk import (combine_counts, judge, plan_optimal, plan_relocations, risk_level, route,
                               thresholds_from_area)
 
 T = {"moderate": 30, "high": 60, "critical": 90}
@@ -75,3 +75,21 @@ def test_route_takes_the_fewest_steps_and_reports_unreachable_zones():
     assert route("A", "E", graph) == ["A", "B", "C", "E"]
     assert route("A", "A", graph) == ["A"]
     assert route("A", "F", graph) == []
+
+
+def test_a_low_count_from_an_unknown_view_is_never_safe():
+    limits = {"moderate": 1000, "high": 2000, "critical": 4000}
+    assert judge(50, limits, None)[0] == "Unknown"
+    assert judge(2500, limits, None)[0] == "High Risk"  # already past the whole zone's limit
+
+
+def test_limits_shrink_with_the_share_in_view():
+    risk, limits = judge(600, {"moderate": 1000, "high": 2000, "critical": 4000}, 0.25)
+    assert limits == {"moderate": 250, "high": 500, "critical": 1000} and risk == "High Risk"
+
+
+def test_an_unknown_zone_never_receives_people():
+    hot = {"count": 95, "risk": "Critical", "thresholds": T}
+    unknown = {"count": 1, "risk": "Unknown", "thresholds": T}
+    assert all(p["target"] is None for p in plan_optimal({"A": hot, "B": unknown}))
+    assert all(p["target"] is None for p in plan_relocations({"A": hot, "B": unknown}))
