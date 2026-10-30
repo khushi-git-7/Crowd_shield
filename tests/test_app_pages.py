@@ -258,3 +258,25 @@ def test_alert_times_are_in_india_time():
     from shared_state import ist_now
 
     assert ist_now().endswith(" IST")
+
+
+MAP_LIMITS = {"limits_source": "each zone's area on the Sangam map, at the \"Conservative\" safety limits",
+              "thresholds": {"A": {"moderate": 18000, "high": 36000, "critical": 72000}}}
+
+
+def test_a_count_against_whole_zone_limits_is_unknown_until_the_view_is_given():
+    crowd = {"A": zone_result(1169), "B": zone_result(10)}
+    app = render(PAGES["Upload"], crowd_data=crowd, **MAP_LIMITS)
+    assert ">Unknown<" in " ".join(block.value for block in app.markdown)
+    plan = render(PAGES["Analysis"], crowd_data=crowd, **MAP_LIMITS)
+    assert any("Risk unknown for zone(s) A" in w.value for w in plan.warning)
+    assert "RISK UNKNOWN" in " ".join(block.value for block in plan.markdown)
+
+
+def test_saying_how_much_is_in_view_scales_the_limits():
+    app = render(PAGES["Upload"], crowd_data={"A": zone_result(10000)}, **MAP_LIMITS)
+    app.selectbox(key="view_A").set_value("About a quarter").run()
+    assert not app.exception, [e.message for e in app.exception]
+    plan = render(PAGES["Analysis"], crowd_data={"A": zone_result(10000)},
+                  zone_view=dict(app.session_state.zone_view), **MAP_LIMITS)
+    assert "HIGH RISK" in " ".join(block.value for block in plan.markdown)

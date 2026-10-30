@@ -25,7 +25,7 @@ DEMO_CLIP = Path(__file__).resolve().parent.parent / "assets" / "samples" / "par
 MIN_INTERVAL = int(os.environ.get("CROWDSHIELD_LIVE_MIN_S", 30))
 RISK_ACCENT = {"Safe": "#10b981", "Moderate": "#f59e0b", "High Risk": "#f97316", "Critical": "#ef4444"}
 RISK_BGR = {"Safe": (129, 185, 16), "Moderate": (11, 158, 245), "High Risk": (22, 115, 249), "Critical": (68, 68, 239)}
-DEMO_LAYOUT = {"Stairs and concourse": [("Stairs", 0.67, 0.25, 1.0, 1.0, 30), ("Concourse", 0.0, 0.53, 0.65, 1.0, 30)]}
+DEMO_LAYOUT = {"Stairs and concourse": [("Stairs", 0.67, 0.25, 1.0, 1.0, 40), ("Concourse", 0.0, 0.53, 0.65, 1.0, 50)]}
 
 st.caption("It looks at one picture every 30 seconds or more, not at every frame (for sudden surges, use Analyse a "
            "video). It runs while this page is open; to watch a camera all day, "

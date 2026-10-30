@@ -9,10 +9,9 @@ import streamlit as st
 
 from crowdshield import notify
 from crowdshield.config import COUNTER_LABELS
-from crowdshield.risk import plan_optimal
-from detection import risk_level
+from crowdshield.risk import UNKNOWN, plan_optimal
 from emailer import build_critical_email, build_receiving_email, email_configured, send_email
-from shared_state import GLOBAL_CSS, RISK_COLORS, SEGMENTS, get_seg_thresholds, init_state, limits_note, telegram_chat, zone_label, zone_title
+from shared_state import GLOBAL_CSS, RISK_COLORS, SEGMENTS, get_seg_thresholds, init_state, limits_note, telegram_chat, zone_label, zone_risk, zone_title
 from ui import compact, kpi_cards, nav_link, next_step, page_header, risk_pill, section
 
 st.set_page_config(page_title="Evacuation plan and alerts • Crowd Shield", page_icon=None, layout="wide")
@@ -41,9 +40,9 @@ st.markdown("""
 seg_info = {}
 for seg in SEGMENTS:
     if seg in data:
-        t = get_seg_thresholds(seg)
+        risk, t = zone_risk(seg, data[seg]["count"])
         seg_info[seg] = {"count": data[seg]["count"], "image_count": data[seg]["image_count"],
-                         "counter": data[seg].get("counter"), "risk": risk_level(data[seg]["count"], t),
+                         "counter": data[seg].get("counter"), "risk": risk,
                          "thresholds": t}
 
 adjacency = st.session_state.get("zone_adjacency")
@@ -61,6 +60,13 @@ kpi_cards([
     ("Alerts", "Ready" if channels else "Off", " and ".join(channels) if channels else "set up in Team and alerts"),
 ], accents=["#0d9488", RISK_COLORS["Critical"] if at_risk else "#10b981", "#2a78d6",
             RISK_COLORS["Critical"] if stuck else "#10b981", "#10b981" if channels else "#94a3b8"])
+
+unknown = [s for s, i in seg_info.items() if i["risk"] == UNKNOWN]
+if unknown:
+    st.warning(f"Risk unknown for zone(s) {', '.join(unknown)}: the limits are for the whole zone, but nobody has said "
+               "how much of it the photos show, and the part out of view could be packed. These zones get no orders "
+               "and take no people until you choose on Count people in a photo.", icon=":material/help:")
+    nav_link("views/2_Upload.py", "Say how much of each zone the photos show", ":material/photo_camera:", "/Upload")
 
 # ── Zones ──────────────────────────────────────────────────────────────────
 section("Zones", "Each zone's count against its limits (the marks on the bar are Moderate, High Risk and "
@@ -81,7 +87,8 @@ for col, (seg, info) in zip(cols, seg_info.items()):
             f"<div class='zbar'><div class='fill' style='width:{min(count / scale, 1) * 100:.1f}%;"
             f"background:{colour}'></div>{ticks}</div>"
             f"<div style='font-size:.76rem;color:#64748b'>"
-            + (f"{room:,} more before Critical" if room > 0 else f"<b style='color:{colour}'>{-room:,} over "
+            + ("Count only, not judged" if info["risk"] == UNKNOWN else
+               f"{room:,} more before Critical" if room > 0 else f"<b style='color:{colour}'>{-room:,} over "
                "Critical</b>")
             + f" · limits {t['moderate']} / {t['high']} / {t['critical']}</div>",
             unsafe_allow_html=True)
@@ -130,6 +137,10 @@ for seg, info in seg_info.items():
         body = (f"<b>RECEIVING</b> · {head}<br>Expect {arriving}. Open entries and guide arrivals to the "
                 "emptier parts of the zone.")
         css = "alert-moderate" if risk == "Moderate" else "alert-safe"
+    elif risk == UNKNOWN:
+        body = (f"<b>RISK UNKNOWN</b> · {head}<br>Count only: the photos may show just part of this zone. Check it "
+                "before relying on it or sending people here.")
+        css = "alert-moderate"
     elif risk == "Moderate":
         body = f"<b>MODERATE</b> · {head}<br>Busy but manageable. Watch it closely."
         css = "alert-moderate"

@@ -7,8 +7,8 @@ import streamlit as st
 from crowdshield import benchmark
 from crowdshield.config import COUNTER_LABELS, NotEnoughMemory
 from crowdshield.points import on_tile_progress
-from detection import process_segment, risk_level
-from shared_state import (GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, SEGMENTS, get_seg_thresholds, init_state, ist_now, limits_note, zone_title,
+from detection import process_segment
+from shared_state import (GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, SEGMENTS, VIEW_SHARES, init_state, ist_now, limits_note, whole_zone_limits, zone_risk, zone_title,
                           zone_label)
 from ui import next_step, page_header, risk_pill, section, working
 
@@ -129,7 +129,7 @@ if run:
     st.success("Counted: " + " · ".join(f"{zone_label(seg)} {r['count']:,} people" for seg, r in results.items()))
     st.session_state.crowd_data = results
 
-    seg_results = {seg: {"count": r["count"], "risk": risk_level(r["count"], get_seg_thresholds(seg))}
+    seg_results = {seg: {"count": r["count"], "risk": zone_risk(seg, r["count"])[0]}
                    for seg, r in results.items()}
     st.session_state.detection_history.insert(0, {
         "timestamp": ist_now("%b %d, %Y  %H:%M IST"),
@@ -146,11 +146,19 @@ if data:
             + limits_note())
     cols = st.container(key="wrap_results").columns(len(data))
     for col, (seg, d) in zip(cols, data.items()):
-        risk = risk_level(d["count"], get_seg_thresholds(seg))
         with col:
-            st.markdown(f"<div style='display:flex;justify-content:space-between;align-items:center;gap:.4rem'>"
-                        f"{zone_title(seg)}{risk_pill(risk)}</div>",
-                        unsafe_allow_html=True)
+            title = st.container()
+            if whole_zone_limits():  # the limits cover the whole zone, so the risk depends on how much is in view
+                views = st.session_state.setdefault("zone_view", {})
+                st.session_state.setdefault(f"view_{seg}", views.get(seg, "Not sure"))
+                views[seg] = st.selectbox("How much of this zone do the photos show?", list(VIEW_SHARES),
+                                          key=f"view_{seg}",
+                                          help="The limits are for the whole zone. A photo of one corner can look "
+                                               "safe while the rest is packed, so without this the risk is Unknown.")
+            risk = zone_risk(seg, d["count"])[0]
+            title.markdown(f"<div style='display:flex;justify-content:space-between;align-items:center;gap:.4rem'>"
+                           f"{zone_title(seg)}{risk_pill(risk)}</div>",
+                           unsafe_allow_html=True)
             st.metric(f"People in zone {seg}", f"{d['count']:,}", label_visibility="collapsed",
                       help=f"Counted by the {COUNTER_LABELS.get(d.get('counter'), 'model')} from "
                            f"{d['image_count']} photo(s)")

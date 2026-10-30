@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 
 import streamlit as st
 
+from crowdshield.risk import UNKNOWN, judge, risk_level
+
 # Constants live in the core package; re-exported here for the pages.
 from crowdshield.config import (  # noqa: F401
     DEFAULT_THRESHOLDS, FRUIN_PRESETS, MAX_IMAGES_PER_SEGMENT, RISK_LEVELS,
@@ -17,7 +19,10 @@ RISK_COLORS = {
     "Moderate":  "#f59e0b",
     "High Risk": "#f97316",
     "Critical":  "#ef4444",
+    UNKNOWN:     "#94a3b8",
 }
+VIEW_SHARES = {"Not sure": None, "All of it": 1.0, "About three quarters": 0.75, "About half": 0.5,
+               "About a quarter": 0.25}
 
 
 def init_state():
@@ -77,6 +82,22 @@ def get_seg_thresholds(seg: str) -> dict:
         t[seg] = dict(DEFAULT_THRESHOLDS)
         st.session_state.thresholds = t
     return t[seg]
+
+
+def view_share(seg: str) -> float | None:
+    """How much of the zone its photos show, as the user said; None if they haven't."""
+    return VIEW_SHARES[st.session_state.get("zone_view", {}).get(seg, "Not sure")]
+
+
+def whole_zone_limits() -> bool:
+    """Limits from a site map are for each zone's full area, not for what one camera sees."""
+    return st.session_state.get("limits_source", "").startswith("each zone's area on the")
+
+
+def zone_risk(seg: str, count: int) -> tuple[str, dict]:
+    """(risk, limits in use) for a counted zone. The one place pages get this from, so they agree."""
+    limits = get_seg_thresholds(seg)
+    return judge(count, limits, view_share(seg)) if whole_zone_limits() else (risk_level(count, limits), limits)
 
 
 def zone_title(seg: str) -> str:

@@ -6,6 +6,7 @@ import math
 from collections import deque
 
 COMBINE_MODES = ("sum", "max")
+UNKNOWN = "Unknown"  # a count that can't be judged, because how much of the zone it covers isn't known
 
 
 def risk_level(count: int, thresholds: dict) -> str:
@@ -31,6 +32,20 @@ def thresholds_from_area(area_m2: float, preset: dict, coverage: float = 1.0) ->
     high = max(moderate + 1, math.floor(area_m2 * preset["high"] * coverage))
     critical = max(high + 1, math.floor(area_m2 * preset["critical"] * coverage))
     return {"moderate": moderate, "high": high, "critical": critical}
+
+
+def judge(count: int, thresholds: dict, share: float | None) -> tuple[str, dict]:
+    """(risk, limits) for a count from a view of `share` of a zone, against limits for the whole zone.
+
+    Limits shrink with the share seen. If the share isn't known, a low count proves nothing: the rest of
+    the zone could be packed, so it is Unknown, never Safe. A count already past the whole zone's limits
+    stands, since seeing more of the zone could only add people.
+    """
+    if share is None:
+        risk = risk_level(count, thresholds)
+        return (risk if risk in ("High Risk", "Critical") else UNKNOWN), thresholds
+    limits = {k: max(1, math.floor(v * share)) for k, v in thresholds.items()}
+    return risk_level(count, limits), limits
 
 
 def combine_counts(counts: list[int], mode: str = "sum") -> int:
@@ -161,7 +176,7 @@ def plan_optimal(zones: dict, adjacency: dict | None = None, distance_m: dict | 
         if info["risk"] in ("High Risk", "Critical"):
             supply[z] = max(1, info["count"] - limit)
         else:
-            room[z] = max(0, limit - info["count"])
+            room[z] = 0 if info["risk"] == UNKNOWN else max(0, limit - info["count"])
     if not supply:
         return []
 

@@ -12,7 +12,7 @@ from crowdshield.geo import ring_area_m2
 from crowdshield.risk import thresholds_from_area
 from crowdshield.sitemap import (assess, list_sites, scenario_counts, site_from_drawings,
                                  timeline, to_geojson)
-from shared_state import FRUIN_PRESETS, GLOBAL_CSS, RISK_COLORS, SEGMENTS, init_state
+from shared_state import FRUIN_PRESETS, GLOBAL_CSS, RISK_COLORS, SEGMENTS, init_state, view_share
 from ui import compact, kpi_cards, next_step, page_header
 
 st.set_page_config(page_title="Site Map • Crowd Shield", page_icon=None, layout="wide")
@@ -192,7 +192,8 @@ if source == MINE and not st.session_state.get("limits_source", "").startswith(f
     st.info("This map judges your counts by people per m² of each zone. The photo and evacuation-plan pages still "
             f"use limits from {st.session_state.get('limits_source')}, so a zone can look different there. To use "
             "this map everywhere, press Apply map areas and routes in the Export and apply tab below.")
-view = assess(site, counts, preset, planner=planner)
+shares = {z: view_share(z) for z in counts} if source == MINE else None
+view = assess(site, counts, preset, planner=planner, shares=shares)
 zones, plans = view["zones"], view["plans"]
 
 if is_demo:
