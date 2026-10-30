@@ -51,3 +51,12 @@ def test_a_surge_banner_shows_after_an_alarm():
     calm = video_render.annotate(frame, 1.0, [], {}, {})
     alarm = video_render.annotate(frame, 1.0, [], {}, {}, surge="much faster than normal")
     assert alarm[-20:].mean() > calm[-20:].mean() + 20  # a red bar along the bottom
+
+
+def test_the_clean_copy_for_the_player_is_h264_and_untouched(tmp_path):
+    out = video_render.encode_clean(frames(30), 30.0, tmp_path / "clean.mp4")
+    meta = next(imageio_ffmpeg.read_frames(str(out)))
+    assert meta["codec"] == "h264" and meta["size"] == (640, 360)
+    cap = cv2.VideoCapture(str(out))
+    ok, frame = cap.read()
+    assert ok and np.abs(frame.astype(int) - next(frames(1)).astype(int)).mean() < 6  # only compression changes it

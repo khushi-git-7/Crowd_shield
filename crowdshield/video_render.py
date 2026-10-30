@@ -92,13 +92,40 @@ def annotate(frame: np.ndarray, t: float, zones: list[tuple[str, list]], reading
     return out
 
 
+def _writer(out_path: str | Path, width: int, height: int, fps: float, crf: int = 28):
+    import imageio_ffmpeg
+
+    writer = imageio_ffmpeg.write_frames(
+        str(out_path), (width, height), fps=fps, codec="libx264", pix_fmt_out="yuv420p", macro_block_size=2,
+        quality=None, output_params=["-crf", str(crf), "-preset", "veryfast", "-movflags", "+faststart"])
+    writer.send(None)
+    return writer
+
+
+def encode_clean(frames: Iterable[np.ndarray], fps: float, out_path: str | Path) -> Path:
+    """The clip as a small browser-playable MP4, untouched: the page's player draws the analysis on top."""
+    import cv2
+
+    writer = None
+    try:
+        for frame in frames:
+            h, w = frame.shape[:2]
+            frame = frame[: h - h % 2, : w - w % 2]
+            if writer is None:
+                writer = _writer(out_path, frame.shape[1], frame.shape[0], fps, crf=30)
+            writer.send(np.ascontiguousarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+    finally:
+        if writer is not None:
+            writer.close()
+    return Path(out_path)
+
+
 def render(frames: Iterable[np.ndarray], fps: float, out_path: str | Path, zones: list[tuple[str, list]],
            rows: list[dict], events: list[dict], capacities: dict | None = None,
            points: list[np.ndarray] | None = None, count_every: int | None = None,
            progress: Callable[[int], None] | None = None) -> Path:
     """Write the annotated clip as a browser-playable MP4 and return its path."""
     import cv2
-    import imageio_ffmpeg
 
     capacities = capacities or {}
     count_every = count_every or max(1, round(fps))
@@ -119,11 +146,7 @@ def render(frames: Iterable[np.ndarray], fps: float, out_path: str | Path, zones
             h, w = img.shape[:2]
             img = img[: h - h % 2, : w - w % 2]  # H.264 needs even sides
             if writer is None:
-                writer = imageio_ffmpeg.write_frames(
-                    str(out_path), (img.shape[1], img.shape[0]), fps=fps, codec="libx264",
-                    pix_fmt_out="yuv420p", macro_block_size=2, quality=None,
-                    output_params=["-crf", "28", "-preset", "veryfast", "-movflags", "+faststart"])
-                writer.send(None)
+                writer = _writer(out_path, img.shape[1], img.shape[0], fps)
             writer.send(np.ascontiguousarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)))
             if progress:
                 progress(i)

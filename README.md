@@ -54,12 +54,14 @@ slider plays each simulated surge forward, and the zones can be downloaded as
 GeoJSON. With real counts from the Count people in a photo page, or zones you draw yourself, it
 becomes your own site's live view.
 
-The **Analyse a video** page puts this together. It opens on an example already analysed (15 s of Paris
-Saint-Lazare station): the clip itself, with a dot on every head, each zone outlined in the colour of its
-risk and labelled with its live count, and a chart of each zone over time. With your own clip you pick a
-zone layout (whole picture, left and right, near and far, four quarters or custom boxes) and how many people
-each zone holds, and get the same annotated video back (H.264, plays in any browser, downloadable) with a
-CSV of every reading. Marking a floor rectangle of known size switches the zones to people per m², and adds
+The **Analyse a video** page puts this together in a video console. It opens on an example already analysed
+(15 s of Paris Saint-Lazare station). The clip plays clean, and the browser draws the analysis on top as it
+plays (`video_console.py`): each zone as a soft area in the colour of its risk with its live count, and a dot
+on every head counted at that second. Beside it, each zone's count, fill against capacity and risk follow
+the playhead; under it, a timeline of every zone has a playhead you can click to jump to any second. With
+your own clip you pick a zone layout (whole picture, left and right, near and far, four quarters or custom
+boxes) and how many people each zone holds, and get the same console, plus a CSV of every reading and a
+downloadable video with the dots and zones drawn in (H.264, plays anywhere). Marking a floor rectangle of known size switches the zones to people per m², and adds
 walking speed, crowd pressure and time-to-danger.
 It streams the clip frame by frame instead of loading it whole, so memory stays
 flat however long the clip is. The hosted demo analyses up to 20 seconds (set
