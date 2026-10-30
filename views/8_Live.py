@@ -72,6 +72,9 @@ if link:
 # ---- 2. First frame and zones ------------------------------------------------
 key = ("demo",) if use_demo else ("url", link)
 if st.session_state.get("live_key") != key:
+    if st.session_state.get("live_on"):
+        st.warning("Monitoring stopped because you changed the camera, and the chart and alert log were cleared. "
+                   "Switch Monitoring on again below.", icon=":material/pause_circle:")
     st.session_state.live_key, st.session_state.live_on = key, False
     st.session_state.pop("live", None)
     st.session_state.live_first = None
@@ -94,11 +97,12 @@ with right:
     zones = {name: {"polygon": poly, "thresholds": live.capacity_thresholds(caps[name])} for name, poly in picked}
 
 
-from crowdshield.video_render import _label  # noqa: E402
+from crowdshield.detection import draw_head_dots  # noqa: E402
+from crowdshield.video_render import PointRecorder, _label  # noqa: E402
 
 
-def draw(frame, levels=None):
-    out = frame.copy()
+def draw(frame, levels=None, points=None):
+    out = draw_head_dots(frame, points) if points is not None and len(points) else frame.copy()
     for name, info in zones.items():
         (x0, y0), _, (x1, y1), _ = info["polygon"]
         colour = RISK_BGR[levels[name]] if levels and name in levels else (200, 160, 0)
@@ -136,10 +140,18 @@ if running and "live" not in st.session_state:
         st.error(f"Can't monitor: {counter_name}.")
         st.session_state.live_on = False
         st.stop()
+    recorder = PointRecorder() if counter_name.startswith("point model") else None  # keeps the dots to show
     st.session_state.live = {
-        "monitor": live.LiveMonitor(zones, counter), "t0": time.time(), "log": [], "alerts": [],
+        "monitor": live.LiveMonitor(zones, recorder or counter), "recorder": recorder, "t0": time.time(), "log": [],
+        "alerts": [],
         "feed": live.DemoFeed(DEMO_CLIP, step_s=1.0) if use_demo else None, "frame": first,
         "counter": counter_name, "seconds": None}
+
+
+def latest_points(state):
+    """The head points of the latest count, if this counter gives points."""
+    recorder = state.get("recorder")
+    return recorder.points[-1] if recorder and recorder.points else None
 
 
 def tick():
@@ -161,12 +173,14 @@ def tick():
         st.error(str(exc))
         return
     state["seconds"], state["frame"] = time.time() - started, frame
+    if state["recorder"]:
+        del state["recorder"].points[:-1]
     state["log"].append({"t": result["t"], **{z: r["count"] for z, r in result["zones"].items()},
                          "_risk": {z: r["risk"] for z, r in result["zones"].items()}})
     photo = None  # the frame that raised the alert, zones coloured by risk, as the page shows it
     if result["events"] and send_alerts:
         levels = {z: r["risk"] for z, r in result["zones"].items()}
-        photo = cv2.imencode(".jpg", cv2.cvtColor(draw(frame, levels), cv2.COLOR_RGB2BGR),
+        photo = cv2.imencode(".jpg", cv2.cvtColor(draw(frame, levels, latest_points(state)), cv2.COLOR_RGB2BGR),
                              [cv2.IMWRITE_JPEG_QUALITY, 85])[1].tobytes()
     for event in result["events"]:
         text = notify.alert_text(event["zone"], event["zone"], event["risk"], event["count"], event["per_m2"],
@@ -195,7 +209,8 @@ def show():
     accents.append(None)
     kpi_cards(cards, accents)
     pic, chart = st.columns([3, 2])
-    pic.image(draw(state["frame"], levels), caption="Latest frame, zones coloured by risk", width="stretch")
+    pic.image(draw(state["frame"], levels, latest_points(state)), width="stretch",
+              caption="Latest frame: a dot on every head counted, zones coloured by risk. Check the dots.")
     with chart:
         section("Over time", "People per zone at each sample.")
         import altair as alt
@@ -207,7 +222,7 @@ def show():
         palette = ["#2a78d6", "#eb6834", "#1baf7a", "#8b5cf6"][:len(names)]
         st.altair_chart(
             alt.Chart(long).mark_line(strokeWidth=2, point=True, interpolate="monotone").encode(
-                x=alt.X("Minutes:Q", title="Minutes since monitoring started"),
+                x=alt.X("Minutes:Q", title="Minutes since monitoring started", axis=alt.Axis(format=".1f")),
                 y=alt.Y("People:Q", title="People in zone"),
                 color=alt.Color("Zone:N", scale=alt.Scale(domain=names, range=palette)),
                 tooltip=["Zone", alt.Tooltip("Minutes:Q", format=".1f"), alt.Tooltip("People:Q", format=".0f")]

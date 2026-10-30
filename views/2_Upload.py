@@ -173,6 +173,9 @@ if data:
                                f"where the point model found {r['count']:,}. This usually means dots on "
                                "gravel, waves or boards. Look at the dots before acting on it.",
                                icon=":material/visibility:")
+            if d["count"] < 10:
+                st.caption("Almost no one found. If the picture is empty, these few dots are false alarms: the "
+                           "model always looks for heads, so treat this as no crowd.")
             lead = max(d.get("per_image") or [{}], key=lambda r: r.get("count", 0))
             if lead.get("overlay") is not None:
                 import cv2

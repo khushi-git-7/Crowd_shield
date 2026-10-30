@@ -88,3 +88,35 @@ def test_a_live_alert_arrives_with_the_camera_picture(monkeypatch):
     assert not app.exception, [e.message for e in app.exception]
     text, image, chat = sent[0]
     assert chat == "5" and "Stairs" in text and image[:2] == b"\xff\xd8"  # a JPEG of the frame
+
+
+def test_live_frames_show_the_head_dots(monkeypatch):
+    import numpy as np
+
+    from crowdshield import counting, points
+
+    monkeypatch.setattr(points, "load_point_model", lambda: None)
+    monkeypatch.setattr(counting, "make_counter", lambda: (object(), "point model (PET)"))
+    monkeypatch.setattr(points, "count_points", lambda frame: {
+        "count": 3, "raw_count": 3, "points": np.array([[100.0, 100.0], [120.0, 200.0], [140.0, 300.0]])})
+    app = render()
+    next(t for t in app.toggle if t.label == "Monitoring").set_value(True).run()
+    assert not app.exception, [e.message for e in app.exception]
+    assert len(app.session_state.live["recorder"].points) == 1  # only the latest is kept
+    assert any("a dot on every head" in i.proto.imgs[0].caption for i in app.get("image"))
+
+
+def test_changing_the_camera_says_monitoring_stopped(monkeypatch):
+    from crowdshield import counting, live
+    from crowdshield.monitor import points_to_grid
+
+    monkeypatch.setattr(counting, "make_counter", lambda: (lambda f: points_to_grid([], f.shape), "test counter"))
+    monkeypatch.setattr(live, "resolve_stream", lambda link: (None, "That camera is offline right now."))
+    app = render()
+    next(t for t in app.toggle if t.label == "Monitoring").set_value(True).run()
+    app.radio[0].set_value("A real public camera (live now)").run()
+    assert not app.exception, [e.message for e in app.exception]
+    app.session_state["live_on"] = True
+    app.session_state["live_key"] = "another"
+    app.radio[0].set_value("Demo feed (a recorded clip played as if live)").run()
+    assert any("Monitoring stopped" in w.value for w in app.warning)
