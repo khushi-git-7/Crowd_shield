@@ -4,7 +4,6 @@ import io
 import json
 import os
 import re
-import time
 
 import numpy as np
 import segno
@@ -13,7 +12,7 @@ import streamlit as st
 from crowdshield import notify
 from crowdshield.config import REPO_ROOT
 from emailer import email_configured, send_email
-from shared_state import GLOBAL_CSS, SEGMENTS, init_state, telegram_chat, zone_label
+from shared_state import GLOBAL_CSS, SEGMENTS, init_state, ist_now, telegram_chat, zone_label
 from ui import kpi_cards, next_step, page_header, section
 
 st.set_page_config(page_title="Team and alerts • Crowd Shield", page_icon=None, layout="wide")
@@ -69,7 +68,7 @@ def wait_for_telegram(code: str) -> None:
         st.warning(f"Can't check Telegram right now: {notify.last_check['problem']}. Trying again...")
     else:
         st.caption(f":material/hourglass_top: Waiting for Start in Telegram... (checked at "
-                   f"{time.strftime('%H:%M:%S')})")
+                   f"{ist_now()})")
 
 
 section("1. Where alerts go", "Nothing is ever sent on its own: only when you press Send alerts on the evacuation "

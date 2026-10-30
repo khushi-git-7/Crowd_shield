@@ -12,7 +12,7 @@ from ui import kpi_cards, next_step, page_header, section, working, zone_picker
 
 from crowdshield import counting, live, notify
 from crowdshield.config import NotEnoughMemory
-from shared_state import GLOBAL_CSS, init_state, telegram_chat
+from shared_state import GLOBAL_CSS, init_state, ist_now, telegram_chat
 
 st.set_page_config(page_title="Watch a live camera • Crowd Shield", page_icon=None, layout="wide")
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
@@ -172,7 +172,7 @@ def tick():
         text = notify.alert_text(event["zone"], event["zone"], event["risk"], event["count"], event["per_m2"],
                                  None if event["eta_s"] is None else event["eta_s"] / 60)
         sent = notify.broadcast(text, photo, chat_id=telegram_chat()) if send_alerts else ["alerts are off"]
-        state["alerts"].append({"time": time.strftime("%H:%M:%S"), "zone": event["zone"], "risk": event["risk"],
+        state["alerts"].append({"time": ist_now(), "zone": event["zone"], "risk": event["risk"],
                                 "kind": event["kind"], "sent": "; ".join(sent)})
     state["last"] = result
 

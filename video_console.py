@@ -177,7 +177,7 @@ D.zones.forEach((z, i) => {
   panel.appendChild(el); cards[z.name] = el;
 });
 const status = document.createElement('div'); panel.appendChild(status);
-const totals = {}; D.rows.forEach(r => totals[r.t] = (totals[r.t] || 0) + r.people);
+const totals = {}; D.rows.forEach(r => totals[r.t] = (totals[r.t] || 0) + Math.round(r.people));
 const busiest = Object.entries(totals).reduce((a, b) => b[1] > a[1] ? b : a, ['0', 0]);
 document.getElementById('peakAll').textContent = `busiest at ${(+busiest[0]).toFixed(0)} s: ${Math.round(busiest[1])} people`;
 
@@ -256,7 +256,7 @@ function update() {
   D.zones.forEach((z, i) => {
     const rd = reading(z.name, t); if (!rd) return;
     const lv = level(rd, z.cap), c = lv ? D.risk[lv] : colour(i), el = cards[z.name];
-    total += rd.people;
+    total += Math.round(rd.people);
     el.style.setProperty('--r', c);
     el.querySelector('.n').textContent = D.calibrated ? (rd.per_m2 || 0).toFixed(1) : Math.round(rd.people);
     el.querySelector('.badge').textContent = lv || '';

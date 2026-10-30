@@ -1,7 +1,6 @@
 """Count people in a photo: up to four photos per zone, a dot on every head, and each zone's risk."""
 
 import time
-from datetime import datetime
 
 import streamlit as st
 
@@ -9,7 +8,7 @@ from crowdshield import benchmark
 from crowdshield.config import COUNTER_LABELS, NotEnoughMemory
 from crowdshield.points import on_tile_progress
 from detection import process_segment, risk_level
-from shared_state import (GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, SEGMENTS, get_seg_thresholds, init_state, limits_note, zone_title,
+from shared_state import (GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, SEGMENTS, get_seg_thresholds, init_state, ist_now, limits_note, zone_title,
                           zone_label)
 from ui import next_step, page_header, risk_pill, section, working
 
@@ -37,7 +36,7 @@ st.markdown(
 def sample_photos():
     """Hand-checked Indian photos with the model's stored head points: instant, nothing to run."""
     rows = [r for r in benchmark.load() if (benchmark.INDIA / "images" / r["image"]).exists()]
-    return sorted(rows, key=lambda r: abs(r["error"]) / max(r["true"], 1))[:6]  # the model's best six
+    return sorted(rows, key=lambda r: abs(r["error"]) / max(r["true"], 1))  # all of them, closest first, misses included
 
 
 samples = sample_photos()
@@ -45,9 +44,10 @@ if samples:
     with st.container(border=True):
         top, pick = st.columns([3, 2])
         top.markdown("**No photo handy? Try a sample.** These are real Indian crowd photos that were "
-                     "counted by hand, with the model's head points already computed, so this is "
-                     "instant and runs nothing on the server.")
-        chosen = pick.selectbox("Sample photo", samples, format_func=lambda r: r["title"][:60],
+                     "counted by hand, good results and bad. The model's head points were computed in advance at full "
+                     "detail, so this is instant; the same photo uploaded here is counted at lower detail and can "
+                     "come out different.")
+        chosen = pick.selectbox("Sample photo", samples, format_func=lambda r: r["title"].rsplit(".", 1)[0].replace("_", " ")[:60],
                                 label_visibility="collapsed", key="sample_choice")
         if pick.button("Show the count", key="sample_show", width="stretch"):
             st.session_state.sample_shown = chosen["image"]
@@ -132,7 +132,7 @@ if run:
     seg_results = {seg: {"count": r["count"], "risk": risk_level(r["count"], get_seg_thresholds(seg))}
                    for seg, r in results.items()}
     st.session_state.detection_history.insert(0, {
-        "timestamp": datetime.now().strftime("%b %d, %Y  %H:%M"),
+        "timestamp": ist_now("%b %d, %Y  %H:%M IST"),
         "seg_count": len(results),
         "total":     sum(r["count"] for r in results.values()),
         "results":   seg_results,

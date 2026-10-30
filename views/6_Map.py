@@ -78,7 +78,7 @@ with st.container(border=True):
                                    "in photos (zone A on the photo page is zone A here).")
     with c3:
         preset_name = st.selectbox("Safety limits for", list(FRUIN_PRESETS),
-                                   index=list(FRUIN_PRESETS).index("Crowded events / concerts"),
+                                   index=list(FRUIN_PRESETS).index(st.session_state.get("applied_preset", "Crowded events / concerts")),
                                    help="How many people per m² count as crowded, dangerous or critical. Stricter "
                                         "for corridors and gates, looser for events where people stand close "
                                         "(after Fruin's crowd-safety levels).")
@@ -212,7 +212,7 @@ chip = ("<span class='pill warn'>Simulated counts</span> <span class='pill neutr
         else "<span class='pill brand'>Counts from your photos</span>" if counted else "")
 kpis = [
     ("People in zones", compact(sum(r["count"] for r in counted)) if counted else "–",
-     f"{len(counted)} of {len(zones)} zones counted"),
+     f"{len(counted)} of {len(zones)} zones " + ("simulated" if source == SIM else "counted")),
     ("Area monitored", f"{total_area / 10_000:,.1f} ha", f"{total_area:,.0f} m² measured on the map"),
     ("Peak density", f"{peak['per_m2']:.1f} /m²" if peak else "–",
      html.escape(peak["name"]) if peak else "no counts yet"),
@@ -384,6 +384,7 @@ with tab_use:
                 st.session_state.thresholds[z] = thresholds_from_area(r["area_m2"], preset)
             st.session_state.zone_adjacency = view["adjacency"]
             st.session_state.zone_names = {z: r["name"] for z, r in zones.items()}
+            st.session_state.applied_preset = preset_name  # so the map shows these limits when you come back
             st.session_state.limits_source = (f"each zone's area on the {site_choice} map, at the "
                                               f"\"{preset_name}\" safety limits")
             st.success(f"Applied areas and {preset_name.lower()} limits for zones "

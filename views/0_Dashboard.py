@@ -34,10 +34,10 @@ st.markdown(f"""
   <p>Crowd Shield counts the people in camera pictures, works out how crowded each part of a site is,
   and tells the team where to move people before it becomes dangerous.</p>
   <div class="stats">
-    <div class="stat"><b>91%</b><span>accurate on hand-counted Indian photos</span></div>
-    <div class="stat"><b>92.1%</b><span>accurate on street crowds</span></div>
-    <div class="stat"><b>86.1%</b><span>accurate on packed crowds</span></div>
-    <div class="stat"><b>11 / 11</b><span>sudden surges caught in test videos</span></div>
+    <div class="stat"><b>86–91%</b><span>accurate on 10 hand-counted Indian photos: 86% on this free server, 91% at full detail</span></div>
+    <div class="stat"><b>92.1%</b><span>accurate on street crowds (ShanghaiTech B)</span></div>
+    <div class="stat"><b>86.1%</b><span>accurate on packed crowds (ShanghaiTech A)</span></div>
+    <div class="stat"><b>11 / 11</b><span>sudden surges caught in a small test: 11 clips, not Indian crowds</span></div>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -50,7 +50,7 @@ START = [
      "views/2_Upload.py", "Count people in a photo", "/Upload"),
     ("videocam", "I have a video clip", "See how a crowd changes second by second, and spot sudden surges.",
      "views/5_Video.py", "Analyse a video", "/Video"),
-    ("sensors", "I have a live camera", "Recount every 30 seconds and warn before a zone fills up.",
+    ("sensors", "I have a live camera", "Recount as often as every 30 seconds and warn before a zone fills up.",
      "views/8_Live.py", "Watch a live camera", "/Live"),
     ("map", "I'm just exploring", "Open the Kumbh Mela site map and play a crowd surge forward.",
      "views/6_Map.py", "Open the site map", "/Map"),
@@ -117,6 +117,7 @@ if data:
                 st.markdown(f"<div style='margin:.3rem 0'><b>{entry['timestamp']}</b> · {entry['total']:,} people "
                             f"&nbsp; {pills}</div>", unsafe_allow_html=True)
 
-st.caption("The accuracy figures come from test photos the model never saw in training: the ShanghaiTech test sets "
-           "and 10 hand-counted Indian photos, all counted at full detail.")
+st.caption("A research project: it has not been used at a real event yet, so treat it as a second pair of eyes, "
+           "not the decision. The accuracy figures come from test photos the model never saw in training: the "
+           "ShanghaiTech test sets and a pilot of 10 hand-counted Indian photos.")
 nav_link("views/7_Benchmark.py", "How accurate is it? See every test photo", ":material/verified:", "/Benchmark")
