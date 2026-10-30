@@ -1,5 +1,7 @@
 """Shared session-state defaults and constants used across pages."""
 
+from datetime import datetime, timedelta, timezone
+
 import streamlit as st
 
 # Constants live in the core package; re-exported here for the pages.
@@ -7,6 +9,8 @@ from crowdshield.config import (  # noqa: F401
     DEFAULT_THRESHOLDS, FRUIN_PRESETS, MAX_IMAGES_PER_SEGMENT, RISK_LEVELS,
     SEGMENTS, SOURCE_MODEL_MAP,
 )
+
+IST = timezone(timedelta(hours=5, minutes=30))  # the hosted server runs on UTC
 
 RISK_COLORS = {
     "Safe":      "#10b981",
@@ -55,6 +59,11 @@ def limits_note() -> str:
         note += (" For limits based on each zone's real size, open the Site map and press Apply map areas "
                  "(or enter areas in Settings).")
     return note
+
+
+def ist_now(fmt: str = "%H:%M:%S IST") -> str:
+    """The time in India, for alert logs and history."""
+    return datetime.now(IST).strftime(fmt)
 
 
 def telegram_chat() -> str | None:

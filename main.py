@@ -59,10 +59,25 @@ PAGES = {
 }
 page = st.navigation(PAGES)
 
-with st.sidebar:
+# On a phone the menu covers the page, and Streamlit leaves it open after a choice: close it.
+CLOSE_MENU = """<script>
+if (!window.csMenuCloser) {
+  window.csMenuCloser = true;
+  document.addEventListener('click', e => {
+    const link = e.target.closest('[data-testid="stSidebarNav"] a');
+    if (link && window.innerWidth < 768) {
+      setTimeout(() => document.querySelector('[data-testid="stSidebarCollapseButton"] button')?.click(), 60);
+    }
+  });
+}
+</script>"""
+
+
+def session_status() -> None:
     counted = len(st.session_state.crowd_data)
     channels = ready_channels(telegram_chat())
-    st.markdown(
+    st.sidebar.html(CLOSE_MENU, unsafe_allow_javascript=True)
+    st.sidebar.markdown(
         "<div class='rail-foot'>"
         "<div style='font-weight:700;color:#94a3b8;margin-bottom:.2rem'>This session</div>"
         f"<div class='rail-status'><i style='background:{'#10b981' if counted else '#475569'}'></i>"
@@ -76,4 +91,8 @@ with st.sidebar:
         "</div></div>",
         unsafe_allow_html=True)
 
-page.run()
+
+try:
+    page.run()
+finally:  # after the page, so a count it just made shows; many pages end early with st.stop()
+    session_status()

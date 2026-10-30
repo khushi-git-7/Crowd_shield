@@ -240,3 +240,21 @@ def test_a_connected_user_can_send_themselves_a_sample_alert(monkeypatch):
     next(b for b in app.button if b.label == "Send a sample alert").click().run()
     text, image, chat = sent[-1]
     assert chat == "5" and "SAMPLE ALERT" in text and "CRITICAL" in text and image[:2] == b"\xff\xd8"  # a JPEG
+
+
+def test_photo_page_offers_every_sample_not_just_the_best():
+    app = render(PAGES["Upload"])
+    assert len(app.selectbox(key="sample_choice").options) == 10
+
+
+def test_home_says_what_the_free_server_scores_and_that_it_is_unproven():
+    app = render(PAGES["Dashboard"])
+    text = " ".join(block.value for block in app.markdown)
+    assert "86% on this free server" in text and "not Indian crowds" in text
+    assert any("has not been used at a real event" in c.value for c in app.caption)
+
+
+def test_alert_times_are_in_india_time():
+    from shared_state import ist_now
+
+    assert ist_now().endswith(" IST")

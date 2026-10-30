@@ -217,7 +217,7 @@ UCF-QNRF is real. The Indian gain is large, but 10 photos are too few to prove i
 of the India set comes next. The Mumbai photo is now counted as 455 (full detail) or 629 (online server).
 
 The **How accurate is it?** page in the app shows per-scene accuracy and every photo with the true and
-the model's head points (91.1% overall at full detail; the hardest photo is now Thane station, counted
+the model's head points (91.1% overall at full detail with the correction the app ships; the hardest photo is now Thane station, counted
 too low: 311 against 425).
 
 ### Spotting panic

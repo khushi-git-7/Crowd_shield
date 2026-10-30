@@ -31,6 +31,8 @@ acc = accuracy(rows)
 close = sum(abs(r["error"]) <= 0.25 * r["true"] for r in rows)
 worst = max(rows, key=lambda r: abs(r["error"]))
 others = [r for r in rows if r is not worst]
+miss = max(rows, key=lambda r: abs(r["error"]) / max(r["true"], 1))
+low = sum(r["error"] < 0 for r in rows)
 
 
 def photo_name(r) -> str:
@@ -48,11 +50,20 @@ kpi_cards([
 st.markdown(
     f"<div class='card' style='margin-top:1rem;font-size:.9rem'><b>Hardest photo:</b> on "
     f"<b>{html.escape(photo_name(worst))}</b> the model counted <b>{worst['model']:,.0f}</b> against "
-    f"<b>{worst['true']:,}</b> real people ({'too few' if worst['error'] < 0 else 'too many'}).<br>"
+    f"<b>{worst['true']:,}</b> real people ({'too few' if worst['error'] < 0 else 'too many'}). In percentage "
+    f"terms the biggest miss is <b>{html.escape(photo_name(miss))}</b>: {miss['model']:,.0f} against {miss['true']:,}. "
+    f"It counted too few on {low} of {len(rows)} photos, and that is the dangerous direction.<br>"
     f"<b>What changed:</b> the first model took the gravel between Mumbai's railway tracks for heads and counted "
     f"1,267 people against 415. The current one also learned from 1,200 dense crowd photos (UCF-QNRF) and from "
     f"photos of empty Indian tracks, and counts that photo as 455. These counts use full detail, as on a laptop; "
     f"the free online server counts at lower detail and scores 86% on the same 10 photos.</div>",
+    unsafe_allow_html=True)
+
+st.markdown(
+    "<div class='card' style='margin-top:1rem;font-size:.9rem'><b>The 11 / 11 on the home page:</b> the surge alarm "
+    "caught all 11 sudden-escape clips from the University of Minnesota, 3 scenes in all. It is a small test on "
+    "staged clips, not Indian crowds, and the alarm's setting was chosen on those same 3 scenes, testing each one "
+    "with a setting from the other two. It has not been used at a real event.</div>",
     unsafe_allow_html=True)
 
 # ── By scene ───────────────────────────────────────────────────────────────
