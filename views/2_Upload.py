@@ -8,7 +8,7 @@ from crowdshield import benchmark
 from crowdshield.config import COUNTER_LABELS, NotEnoughMemory
 from crowdshield.points import on_tile_progress
 from detection import process_segment
-from shared_state import (DEFAULT_LIMITS, DEFAULT_THRESHOLDS, GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, SEGMENTS, VIEW_SHARES, init_state, ist_now, limits_note, whole_zone_limits, zone_risk, zone_title,
+from shared_state import (DEFAULT_LIMITS, DEFAULT_THRESHOLDS, GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, PHOTO_AREA_PRESET, SEGMENTS, VIEW_SHARES, init_state, ist_now, limits_note, whole_zone_limits, zone_risk, zone_title,
                           zone_label)
 from ui import next_step, page_header, risk_pill, section, working
 
@@ -30,6 +30,9 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
+
+
+NO_CROWD = 5  # fewer heads than this is shown as no crowd: the model puts a few false dots on empty scenes
 
 
 # ── Samples: instant, nothing runs on the server ────────────────────────────
@@ -159,11 +162,19 @@ if data:
                                           key=f"view_{seg}",
                                           help="The limits are for the whole zone. A photo of one corner can look "
                                                "safe while the rest is packed, so without this the risk is Unknown.")
+            elif st.session_state.limits_source == DEFAULT_LIMITS:
+                areas = st.session_state.setdefault("photo_area", {})
+                st.session_state.setdefault(f"photo_area_{seg}", areas.get(seg, 0))
+                areas[seg] = st.number_input("Area in the photos (m²)", 0, 1_000_000, step=10, key=f"photo_area_{seg}",
+                                             help="Roughly how much ground the photos show, so the count can be judged "
+                                                  f"by how tightly people stand ({PHOTO_AREA_PRESET}). Ten long steps "
+                                                  "by ten long steps is about 60 m².")
             risk = zone_risk(seg, d["count"])[0]
             title.markdown(f"<div style='display:flex;justify-content:space-between;align-items:center;gap:.4rem'>"
                            f"{zone_title(seg)}{risk_pill(risk)}</div>",
                            unsafe_allow_html=True)
-            st.metric(f"People in zone {seg}", f"{d['count']:,}", label_visibility="collapsed",
+            st.metric(f"People in zone {seg}", "No crowd found" if d["count"] < NO_CROWD else f"{d['count']:,}",
+                      label_visibility="collapsed",
                       help=f"Counted by the {COUNTER_LABELS.get(d.get('counter'), 'model')} from "
                            f"{d['image_count']} photo(s)")
             for r in d.get("per_image") or []:
@@ -173,9 +184,9 @@ if data:
                                f"where the point model found {r['count']:,}. This usually means dots on "
                                "gravel, waves or boards. Look at the dots before acting on it.",
                                icon=":material/visibility:")
-            if d["count"] < 10:
-                st.caption("Almost no one found. If the picture is empty, these few dots are false alarms: the "
-                           "model always looks for heads, so treat this as no crowd.")
+            if d["count"] < NO_CROWD:
+                st.caption(f"The model marked {d['count']} possible head(s). Look at the dots: on an empty picture "
+                           "they are false alarms, and a few real people are not a crowd.")
             lead = max(d.get("per_image") or [{}], key=lambda r: r.get("count", 0))
             if lead.get("overlay") is not None:
                 import cv2

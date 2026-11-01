@@ -67,10 +67,10 @@ kpi_cards([
 
 unknown = [s for s, i in seg_info.items() if i["risk"] == UNKNOWN]
 if unknown:
-    st.warning(f"Risk unknown for zone(s) {', '.join(unknown)}: the limits are for the whole zone, but nobody has said "
-               "how much of it the photos show, and the part out of view could be packed. These zones get no orders "
-               "and take no people until you choose on Count people in a photo.", icon=":material/help:")
-    nav_link("views/2_Upload.py", "Say how much of each zone the photos show", ":material/photo_camera:", "/Upload")
+    st.warning(f"Risk unknown for zone(s) {', '.join(unknown)}: the app doesn't know how much ground the photos cover, so "
+               "it can't say whether this many people is safe, and the part out of view could be packed. These zones "
+               "get no orders and take no people until you say on Count people in a photo.", icon=":material/help:")
+    nav_link("views/2_Upload.py", "Say how much ground the photos show", ":material/photo_camera:", "/Upload")
 
 # ── Zones ──────────────────────────────────────────────────────────────────
 section("Zones", "Each zone's count against its limits (the marks on the bar are Moderate, High Risk and "

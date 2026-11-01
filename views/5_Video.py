@@ -93,6 +93,19 @@ def show_result(clean: bytes, annotated: bytes | None, fps: float, size, zones: 
 
 tab_example, tab_own = st.tabs(["Example: a busy Paris station", "Analyse your own clip"])
 
+SURGE_CHART = Path(__file__).resolve().parent.parent / "results" / "umn" / "timeline.png"
+
+
+def show_surge_test() -> None:
+    """This clip has no surge, so show a clip that did, from the test the alarm was measured on."""
+    with st.expander("What does the surge alarm look like? This clip has no surge"):
+        st.markdown("Nobody suddenly runs in this station clip, so the alarm rightly stays quiet. Here it is on the "
+                    "University of Minnesota crowd-escape videos, where everyone suddenly runs away. The score shoots "
+                    "up as they run, and the alarm fired on all 11 clips with no false alarms. That is a small test "
+                    "of staged clips from 3 scenes, not Indian crowds.")
+        st.image(str(SURGE_CHART), width="stretch")
+
+
 # ── Example: analysed in advance, so it shows instantly ─────────────────────────────────────────────
 with tab_example:
     data = json.loads(SAMPLE_DATA.read_text(encoding="utf-8"))
@@ -100,6 +113,7 @@ with tab_example:
                 "analysed by Crowd Shield. **Press play**, or click the timeline to jump to any second.")
     show_result(SAMPLE_CLEAN.read_bytes(), SAMPLE_VIDEO.read_bytes(), data["fps"], data["size"], data["zones"],
                 data["rows"], data["events"], data["points"], data["count_every"], calibrated=False, key="example")
+    show_surge_test()
     st.caption(SAMPLE_CREDIT + f" Analysed with the same code as your own clips, counting once a second with the {data['counter']}. "
                "The zone sizes (40 and 50 people) are examples, chosen for the demo.")
     nav_link("views/8_Live.py", "Want this on a camera that is live right now? Watch a live camera",
