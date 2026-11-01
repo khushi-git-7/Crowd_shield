@@ -36,3 +36,15 @@ def test_the_paris_example_passes_and_its_old_walkway_box_would_not():
     assert check_zones(heads, zones, 640, 360)["mixed"] == []
     old = [("Old walkway", [(0, 61), (416, 61), (416, 187), (0, 187)])]
     assert check_zones(heads, old, 640, 360)["mixed"] == ["Old walkway"]
+
+
+def test_a_box_over_the_whole_picture_is_called_out_even_with_no_gap():
+    rng = np.random.default_rng(3)
+    crowd = np.c_[640 * rng.random(100), 360 * rng.random(100)]
+    assert check_zones(crowd, [("All", BOX)], 640, 360)["wide"] == ["All"]
+
+
+def test_overlapping_boxes_are_called_out():
+    a, b = [(0, 0), (300, 0), (300, 300), (0, 300)], [(200, 0), (500, 0), (500, 300), (200, 300)]
+    assert check_zones([(250, 100)], [("A", a), ("B", b)], 640, 360)["overlap"] == [("A", "B")]
+    assert check_zones([(100, 100)], [("A", a), ("B", b)], 640, 360)["overlap"] == []
