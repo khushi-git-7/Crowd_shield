@@ -398,10 +398,11 @@ moving?", never "who is this?".
   head. There is no face recognition and nothing in the app tries to tell one
   person from another. Video analysis measures movement per zone (optical
   flow), not the path of any individual.
-- **Nothing is stored.** Uploaded photos and clips stay in memory for your
-  browser session only. The app keeps no database and writes no photos to
+- **Nothing is stored for long.** Uploaded photos and counts stay in the server's
+  memory for up to 2 hours, so a refresh doesn't lose your work; a random cookie lets
+  only your browser find them again. The app keeps no database and writes no photos to
   disk; a video clip is written to a temporary file only while OpenCV decodes
-  it, then deleted. Closing the tab clears the rest. On the hosted demo, processing
+  it, then deleted. On the hosted demo, processing
   happens on Streamlit Community Cloud's servers; use your own copy for
   sensitive footage.
 - **What can leave the app.** Only the email alerts, and only if you set them

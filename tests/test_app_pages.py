@@ -296,7 +296,7 @@ def test_default_limits_show_a_low_count_as_unknown_until_the_area_is_given():
     crowd = {"A": zone_result(20)}
     app = render(PAGES["Upload"], crowd_data=crowd)
     assert ">Unknown<" in " ".join(block.value for block in app.markdown)
-    app.number_input(key="photo_area_A").set_value(100).run()
+    app.selectbox(key="size_A").set_value("Medium: a platform or stretch of street (about 300 m²)").run()
     assert not app.exception, [e.message for e in app.exception]
     assert ">Safe<" in " ".join(block.value for block in app.markdown)
 
@@ -316,3 +316,42 @@ def test_video_example_has_three_zones_and_shows_a_surge_test():
     app = render(PAGES["Video"])
     assert '"name":"Upper walkway"' in app.get("iframe")[0].proto.srcdoc
     assert any("surge alarm" in e.label for e in app.expander)
+
+
+def test_the_plan_page_finishes_the_plan_when_sizes_are_given():
+    crowd = {"A": zone_result(150), "B": zone_result(10)}
+    app = render(PAGES["Analysis"], crowd_data=crowd)
+    text = " ".join(block.value for block in app.markdown)
+    assert "not placed yet" in text and "call reinforcements" not in text
+    app.selectbox(key="size_A").set_value("Small: a gate or corridor (about 50 m²)").run()
+    app.selectbox(key="size_B").set_value("Medium: a platform or stretch of street (about 300 m²)").run()
+    assert not app.exception, [e.message for e in app.exception]
+    text = " ".join(block.value for block in app.markdown)
+    assert "RECEIVING" in text and not any("Risk unknown" in w.value for w in app.warning)
+
+
+def test_a_refresh_brings_back_this_browsers_work_and_nobody_elses(monkeypatch):
+    import shared_state
+
+    monkeypatch.setattr(shared_state, "browser_token", lambda: "my-browser")
+    first = AppTest.from_file(str(ROOT / "main.py"), default_timeout=60)
+    first.session_state["crowd_data"] = {"A": zone_result(40)}
+    first.run()
+    assert not first.exception, [e.message for e in first.exception]
+
+    refreshed = AppTest.from_file(str(ROOT / "main.py"), default_timeout=60).run()
+    assert refreshed.session_state.crowd_data["A"]["count"] == 40
+
+    monkeypatch.setattr(shared_state, "browser_token", lambda: "another-browser")
+    stranger = AppTest.from_file(str(ROOT / "main.py"), default_timeout=60).run()
+    assert not stranger.session_state.crowd_data
+
+
+def test_old_work_is_let_go(monkeypatch):
+    import shared_state
+
+    monkeypatch.setattr(shared_state, "browser_token", lambda: "stale")
+    AppTest.from_file(str(ROOT / "main.py"), default_timeout=60).run()
+    shared_state._kept_sessions()["stale"]["state"]["crowd_data"] = {"A": zone_result(1)}
+    shared_state._kept_sessions()["stale"]["at"] -= shared_state.KEEP_SECONDS + 1
+    assert not AppTest.from_file(str(ROOT / "main.py"), default_timeout=60).run().session_state.crowd_data
