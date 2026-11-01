@@ -170,10 +170,30 @@ def clip_on_disk(data: bytes, suffix: str) -> str:
 
 
 from crowdshield.video_render import _label  # noqa: E402
+from crowdshield.zone_check import check_zones  # noqa: E402
 
 
-def preview(frame, corners, zones):
+def sample_frames(path, n_frames, count=3):
+    """A few frames across the clip, sized as the analysis will see them."""
+    cap = cv2.VideoCapture(path)
+    frames = []
+    for i in np.linspace(0, max(0, n_frames - 1), count).astype(int):
+        cap.set(cv2.CAP_PROP_POS_FRAMES, int(i))
+        ok, frame = cap.read()
+        if ok:
+            if frame.shape[1] > MAX_WIDTH:
+                s = MAX_WIDTH / frame.shape[1]
+                frame = cv2.resize(frame, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
+            frames.append(frame)
+    cap.release()
+    return frames
+
+
+def preview(frame, corners, zones, heads=None):
     out = frame.copy()
+    if heads is not None:
+        for x, y in heads:
+            cv2.circle(out, (int(x), int(y)), 3, (212, 212, 45), -1, cv2.LINE_AA)
     if corners is not None:
         cv2.polylines(out, [np.int32(corners)], True, (0, 255, 255), 2)
     for i, (name, poly) in enumerate(zones):
@@ -237,8 +257,42 @@ with tab_own:
                 width_m = c1.number_input("Rectangle width (m)", 0.1, 500.0, 5.0)
                 length_m = c2.number_input("Rectangle depth (m)", 0.1, 500.0, 5.0)
     with left:
-        st.image(preview(first, corners, zones), width="stretch",
-                 caption=f"First frame of your {seconds:.0f}-second clip, with the zones")
+        picture = st.empty()
+        st.caption("A box should hold one space: don't let it take in two floors, or a balcony and the ground below.")
+        if st.button("Check my boxes against the crowd", icon=":material/rule:",
+                     help="Finds the heads in three frames of the clip and checks your boxes against them."):
+            from crowdshield.config import NotEnoughMemory
+            from crowdshield.points import count_points
+
+            job = working("Checking your boxes", "Finding the heads in three frames of your clip...")
+            path = clip_on_disk(data_bytes, suffix)
+            try:
+                st.session_state.video_heads = {digest: [count_points(f)["points"][:, ::-1]
+                                                         for f in sample_frames(path, n_frames)]}
+            except NotEnoughMemory as exc:
+                st.error(str(exc))
+            except Exception as exc:  # no counting model on this machine
+                st.error(f"Couldn't check the boxes ({type(exc).__name__}). You can still analyse the clip.")
+            finally:
+                job.done()
+                os.remove(path)
+        found = st.session_state.get("video_heads", {}).get(digest)
+        heads = np.vstack(found) if found else None
+        picture.image(preview(first, corners, zones, heads), width="stretch",
+                      caption=(f"Your {seconds:.0f}-second clip with the zones" + (", and the heads found in three "
+                               "frames of it" if found else "")))
+        if found:
+            fit = check_zones(heads, zones, w, h)
+            st.caption("Heads found in the three frames: " + " · ".join(f"{n} {c}" for n, c in fit["heads"].items()))
+            for name in fit["mixed"]:
+                st.warning(f"{name} may mix two separate areas: an empty band runs across it, like the gap between a "
+                           "balcony and the floor below. Use Custom boxes to split it.", icon=":material/warning:")
+            if fit["outside"] > 0.1 * max(fit["total"], 1):
+                st.warning(f"{fit['outside']} of {fit['total']} heads are outside every box, so they won't be counted "
+                           "in any zone.", icon=":material/warning:")
+            if not fit["mixed"] and fit["outside"] <= 0.1 * max(fit["total"], 1):
+                st.success("Your boxes fit the crowd. This is a rough check, so still look at the dots: it can miss "
+                           "two areas when people fill the space between them.")
 
     settings = json.dumps([digest, zones, capacities, corners], default=str)
     run = st.button("Analyse video", type="primary", icon=":material/play_arrow:")
