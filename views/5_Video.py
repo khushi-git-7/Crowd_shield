@@ -64,6 +64,8 @@ def show_result(clean: bytes, annotated: bytes | None, fps: float, size, zones: 
                 events: list, points, count_every, calibrated: bool, handheld: bool = False, key: str = "r"):
     """The console (clean clip, analysis drawn live on top, side panel, timeline), then the details."""
     show_console(clean, fps, size, zones, rows, [] if handheld else events, points, count_every, calibrated)
+    st.caption("Every head the model sees gets a dot. The numbers add up only the heads inside the boxes, so dots "
+               "outside a box are seen but not counted in any zone.")
     if handheld:
         st.info("Surge alarm off: the camera itself moves in this clip, so movement can't be judged.")
     df = pd.DataFrame(rows)
