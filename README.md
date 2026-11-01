@@ -399,8 +399,8 @@ moving?", never "who is this?".
   person from another. Video analysis measures movement per zone (optical
   flow), not the path of any individual.
 - **Nothing is stored for long.** Uploaded photos and counts stay in the server's
-  memory for up to 2 hours, so a refresh doesn't lose your work; a random cookie lets
-  only your browser find them again. The app keeps no database and writes no photos to
+  memory for up to 2 hours, so a refresh doesn't lose your work; a random token kept in your
+  browser lets only that browser find them again. The app keeps no database and writes no photos to
   disk; a video clip is written to a temporary file only while OpenCV decodes
   it, then deleted. On the hosted demo, processing
   happens on Streamlit Community Cloud's servers; use your own copy for
