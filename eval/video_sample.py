@@ -31,8 +31,9 @@ def frames():
 
 
 box = lambda fx0, fx1, fy0, fy1: [(w * fx0, h * fy0), (w * fx1, h * fy0), (w * fx1, h * fy1), (w * fx0, h * fy1)]
-zones = [("Stairs", box(0.67, 1.0, 0.25, 1.0)), ("Concourse", box(0.0, 0.65, 0.53, 1.0))]
-capacities = {"Stairs": 40, "Concourse": 50}
+zones = [("Stairs", box(0.67, 1.0, 0.25, 1.0)), ("Concourse", box(0.0, 0.65, 0.53, 1.0)),
+         ("Upper walkway", box(0.0, 0.65, 0.17, 0.52))]
+capacities = {"Stairs": 40, "Concourse": 50, "Upper walkway": 100}
 rec = PointRecorder()
 t0 = time.time()
 monitor = VideoMonitor(rec, fps, [Zone(n, p) for n, p in zones])

@@ -61,11 +61,11 @@ _TEMPLATE = r"""<!doctype html><html><head><meta charset="utf-8">
   @media (max-width:760px) {  /* phones: video on top, the zones two by two under it */
     .top { grid-template-columns:minmax(0,1fr); }
     .console { padding:10px; }
-    .console .panel { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+    .console .panel { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); gap:8px; }
     .zone .row { flex-wrap:wrap; gap:4px; }
     .console .panel .total { display:none; }
     .console .panel .status { grid-column:1 / -1; }
-    .hud .txt { display:none; } .chip { padding:4px 9px; font-size:11px; }
+    .chip { padding:4px 9px; font-size:11px; }
     .zone { padding:9px 10px; } .zone .count { font-size:20px; } .sub { display:none; }
     .speed, #dots { display:none; }
     svg { height:110px; }
