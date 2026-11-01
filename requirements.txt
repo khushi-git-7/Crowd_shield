@@ -3,7 +3,7 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 torchvision
-streamlit>=1.50
+streamlit>=1.50,<1.67  # 1.67+ may drop st.components.v1.html, which the video player uses
 numpy>=1.24
 # OpenCV without a display, which a server doesn't have. (Installing ultralytics too would bring the full
 # opencv-python as well, and two OpenCV builds break cv2.)
