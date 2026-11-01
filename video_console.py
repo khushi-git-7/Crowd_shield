@@ -64,7 +64,7 @@ _TEMPLATE = r"""<!doctype html><html><head><meta charset="utf-8">
     .console .panel { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); gap:8px; }
     .zone .row { flex-wrap:wrap; gap:4px; }
     .console .panel .total { display:none; }
-    .console .panel .status { grid-column:1 / -1; }
+    .console .panel .status, .console .panel .outside { grid-column:1 / -1; }
     .chip { padding:4px 9px; font-size:11px; }
     .zone { padding:9px 10px; } .zone .count { font-size:20px; } .sub { display:none; }
     .speed, #dots { display:none; }
@@ -92,6 +92,8 @@ _TEMPLATE = r"""<!doctype html><html><head><meta charset="utf-8">
   .speed button.on { border-color:var(--teal); color:var(--teal); }
   .time { font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--muted); margin-left:auto; }
   .panel { display:flex; flex-direction:column; gap:10px; }
+  .outside { color:#8a9bb8; font-size:12px; line-height:1.35; }
+  .outside:empty { display:none; }
   .total { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
   .label { font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:700; }
   .big { font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.1; margin-top:4px;
@@ -140,6 +142,7 @@ _TEMPLATE = r"""<!doctype html><html><head><meta charset="utf-8">
     <div class="panel" id="panel">
       <div class="total"><div class="label">In all zones now</div><div class="big" id="total">0</div>
         <div class="sub" id="peakAll"></div></div>
+      <div class="outside" id="outside"></div>
     </div>
   </div>
   <div class="tl">
@@ -268,6 +271,13 @@ function update() {
   });
   document.getElementById('total').textContent = Math.round(total);
   document.getElementById('hudTotal').textContent = Math.round(total);
+  if (D.points.length) {
+    const k = Math.min(Math.floor(t * D.fps / D.every), D.points.length - 1), pts = D.points[Math.max(k, 0)] || [];
+    const inBox = ([x, y]) => D.zones.some(z => { const xs = z.poly.map(p => p[0]), ys = z.poly.map(p => p[1]);
+      return x >= Math.min(...xs) && x < Math.max(...xs) && y >= Math.min(...ys) && y < Math.max(...ys); });
+    const out = pts.filter(p => !inBox(p)).length;
+    document.getElementById('outside').textContent = out ? `${out} ${out === 1 ? 'dot' : 'dots'} outside the boxes, not in any zone` : '';
+  }
   const live = D.events.find(e => t >= e.t && t - e.t <= 2.5);
   banner.style.display = live ? 'block' : 'none'; if (live) banner.textContent = 'Surge alarm: ' + live.text;
   const fired = D.events.filter(e => e.t <= t);
