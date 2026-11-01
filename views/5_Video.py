@@ -109,7 +109,7 @@ def show_surge_test() -> None:
 # ── Example: analysed in advance, so it shows instantly ─────────────────────────────────────────────
 with tab_example:
     data = json.loads(SAMPLE_DATA.read_text(encoding="utf-8"))
-    st.markdown("Fifteen seconds from a fixed camera above the concourse and stairs of Paris Saint-Lazare station, "
+    st.markdown("Fifteen seconds from a fixed camera above the concourse, stairs and upper walkway of Paris Saint-Lazare station, "
                 "analysed by Crowd Shield. **Press play**, or click the timeline to jump to any second.")
     show_result(SAMPLE_CLEAN.read_bytes(), SAMPLE_VIDEO.read_bytes(), data["fps"], data["size"], data["zones"],
                 data["rows"], data["events"], data["points"], data["count_every"], calibrated=False, key="example")
