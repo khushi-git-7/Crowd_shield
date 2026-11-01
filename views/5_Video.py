@@ -113,6 +113,9 @@ with tab_example:
                 "analysed by Crowd Shield. **Press play**, or click the timeline to jump to any second.")
     show_result(SAMPLE_CLEAN.read_bytes(), SAMPLE_VIDEO.read_bytes(), data["fps"], data["size"], data["zones"],
                 data["rows"], data["events"], data["points"], data["count_every"], calibrated=False, key="example")
+    st.caption("The \"full at\" numbers in this example are limits set by eye to show how the levels work, not measured "
+               "for the station. For a real place, mark four corners of a known rectangle on your own clip and the app "
+               "uses people per m² instead.")
     show_surge_test()
     st.caption(SAMPLE_CREDIT + f" Analysed with the same code as your own clips, counting once a second with the {data['counter']}. "
                "The zone sizes (40 and 50 people) are examples, chosen for the demo.")

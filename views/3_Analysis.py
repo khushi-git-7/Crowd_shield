@@ -11,7 +11,7 @@ from crowdshield import notify
 from crowdshield.config import COUNTER_LABELS
 from crowdshield.risk import UNKNOWN, plan_optimal
 from emailer import build_critical_email, build_receiving_email, email_configured, send_email
-from shared_state import GLOBAL_CSS, EXAMPLE_NOTE, RISK_COLORS, SEGMENTS, get_seg_thresholds, init_state, limits_note, load_example_event, telegram_chat, zone_label, zone_risk, zone_title
+from shared_state import GLOBAL_CSS, EXAMPLE_NOTE, RISK_COLORS, SEGMENTS, get_seg_thresholds, init_state, limits_note, load_example_event, size_picker, size_question, telegram_chat, zone_label, zone_risk, zone_title
 from ui import compact, kpi_cards, nav_link, next_step, page_header, risk_pill, section
 
 st.set_page_config(page_title="Evacuation plan and alerts • Crowd Shield", page_icon=None, layout="wide")
@@ -41,6 +41,15 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+asked = [seg for seg in SEGMENTS if seg in data and size_question(seg)]
+if asked:
+    undecided = any(zone_risk(seg, data[seg]["count"])[0] == UNKNOWN for seg in asked)
+    with st.expander("How much do the photos show?", expanded=undecided, icon=":material/straighten:"):
+        st.caption("A rough answer is enough, and the plan below updates straight away.")
+        for col, seg in zip(st.container(key="wrap_sizes").columns(len(asked)), asked):
+            with col:
+                size_picker(seg, zone_label(seg))
+
 seg_info = {}
 for seg in SEGMENTS:
     if seg in data:
@@ -49,6 +58,7 @@ for seg in SEGMENTS:
                          "counter": data[seg].get("counter"), "risk": risk,
                          "thresholds": t}
 
+unknown = [s for s, i in seg_info.items() if i["risk"] == UNKNOWN]
 adjacency = st.session_state.get("zone_adjacency")
 pairings = plan_optimal(seg_info, adjacency=adjacency)
 at_risk = [s for s, i in seg_info.items() if i["risk"] in ("High Risk", "Critical")]
@@ -60,17 +70,16 @@ kpi_cards([
     ("People counted", compact(sum(i["count"] for i in seg_info.values())), f"in {len(seg_info)} zone(s)"),
     ("Zones at risk", f"{len(at_risk)} / {len(seg_info)}", ", ".join(at_risk) or "none"),
     ("People to move", compact(placed), "into zones with room" if placed else "no moves needed"),
-    ("Nowhere to go", compact(stuck), "need more space or staff" if stuck else "everyone placed"),
+    ("Not placed yet" if unknown else "Nowhere to go", compact(stuck),
+     "answer the question above" if stuck and unknown else "need more space or staff" if stuck else "everyone placed"),
     ("Alerts", "Ready" if channels else "Off", " and ".join(channels) if channels else "set up in Team and alerts"),
 ], accents=["#0d9488", RISK_COLORS["Critical"] if at_risk else "#10b981", "#2a78d6",
             RISK_COLORS["Critical"] if stuck else "#10b981", "#10b981" if channels else "#94a3b8"])
 
-unknown = [s for s, i in seg_info.items() if i["risk"] == UNKNOWN]
 if unknown:
-    st.warning(f"Risk unknown for zone(s) {', '.join(unknown)}: the app doesn't know how much ground the photos cover, so "
-               "it can't say whether this many people is safe, and the part out of view could be packed. These zones "
-               "get no orders and take no people until you say on Count people in a photo.", icon=":material/help:")
-    nav_link("views/2_Upload.py", "Say how much ground the photos show", ":material/photo_camera:", "/Upload")
+    st.warning(f"Risk unknown for zone(s) {', '.join(unknown)}: the app can't tell from a photo how much ground it "
+               "covers, so it won't call these zones safe or send people to them. Answer above to finish the plan.",
+               icon=":material/help:")
 
 # ── Zones ──────────────────────────────────────────────────────────────────
 section("Zones", "Each zone's count against its limits (the marks on the bar are Moderate, High Risk and "
@@ -135,7 +144,8 @@ for seg, info in seg_info.items():
         body = (f"<b>{risk.upper()}</b> · {head}<br>"
                 + ("<b>Emergency.</b> " if risk == "Critical" else "")
                 + f"Relocate <b>~{move:,}</b> people" + (f" to {dest}" if dest else "") + "."
-                + (f" <b>~{nowhere:,} have nowhere safe to go:</b> call reinforcements." if nowhere else "")
+                + (f" <b>~{nowhere:,} not placed yet:</b> some zones still need a size." if nowhere and unknown else
+                   f" <b>~{nowhere:,} have nowhere safe to go:</b> call reinforcements." if nowhere else "")
                 + "<br>Close entries to this zone, open its exits, and stop people walking towards it.")
         css = "alert-critical" if risk == "Critical" else "alert-high"
     elif incoming:

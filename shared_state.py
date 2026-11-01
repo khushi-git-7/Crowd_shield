@@ -1,5 +1,7 @@
 """Shared session-state defaults and constants used across pages."""
 
+import secrets
+import time
 from datetime import datetime, timedelta, timezone
 
 import streamlit as st
@@ -21,6 +23,11 @@ RISK_COLORS = {
     "Critical":  "#ef4444",
     UNKNOWN:     "#94a3b8",
 }
+# How much ground the photos show. A photo alone can't tell: that needs a known distance in the picture.
+AREA_SIZES = {"Not sure": 0, "Small: a gate or corridor (about 50 m²)": 50,
+              "Medium: a platform or stretch of street (about 300 m²)": 300,
+              "Large: a courtyard or ghat section (about 1,500 m²)": 1500,
+              "Very large: open ground (about 10,000 m²)": 10000}
 VIEW_SHARES = {"Not sure": None, "All of it": 1.0, "About three quarters": 0.75, "About half": 0.5,
                "About a quarter": 0.25}
 
@@ -70,6 +77,49 @@ def limits_note() -> str:
 def ist_now(fmt: str = "%H:%M:%S IST") -> str:
     """The time in India, for alert logs and history."""
     return datetime.now(IST).strftime(fmt)
+
+
+# A refresh starts a new Streamlit session. Work is kept in server memory for a while, and a cookie with a
+# random token lets this browser, and only this browser, find it again. Unlike a link, it can't be shared by accident.
+COOKIE = "cs_session"
+KEEP_SECONDS = 2 * 60 * 60
+KEEP_SESSIONS = 12  # the free server's memory is small; the oldest go first
+KEEP = ("agents", "uploaded_images", "image_names", "image_sources", "crowd_data", "thresholds", "seg_areas",
+        "limits_source", "detection_history", "alert_count", "zone_names", "zone_adjacency", "custom_site",
+        "applied_preset", "photo_area", "zone_view", "example_event", "telegram_chat", "telegram_code",
+        "sample_shown", "live", "live_key", "live_sig", "live_first", "live_on", "live_streams")
+
+
+@st.cache_resource
+def _kept_sessions() -> dict:
+    return {}
+
+
+def browser_token() -> str | None:
+    return st.context.cookies.get(COOKIE)
+
+
+def restore_session() -> None:
+    """Bring back this browser's work after a refresh. Runs before anything else on a new session."""
+    if "session_token" in st.session_state:
+        return
+    token, kept = browser_token(), _kept_sessions()
+    saved = kept.get(token)
+    if saved and time.time() - saved["at"] < KEEP_SECONDS:
+        st.session_state.update(saved["state"])
+    st.session_state.session_token = token or secrets.token_hex(16)
+
+
+def remember_session() -> None:
+    """Keep this session's work, and give the browser its token."""
+    token, kept, now = st.session_state.session_token, _kept_sessions(), time.time()
+    kept[token] = {"at": now, "state": {k: st.session_state[k] for k in KEEP if k in st.session_state}}
+    for old in [t for t, s in kept.items() if now - s["at"] >= KEEP_SECONDS]:
+        del kept[old]
+    for old in sorted(kept, key=lambda t: kept[t]["at"])[:-KEEP_SESSIONS]:
+        del kept[old]
+    st.sidebar.html(f"<script>document.cookie = '{COOKIE}={token}; path=/; max-age={KEEP_SECONDS}; SameSite=Lax';"
+                    "</script>", unsafe_allow_javascript=True)
 
 
 def telegram_chat() -> str | None:
@@ -141,6 +191,30 @@ def load_example_event() -> None:
     st.session_state.limits_source = "the example event (made-up limits)"
     st.session_state.zone_adjacency = None
     st.session_state.example_event = True
+
+
+def size_question(seg: str) -> bool:
+    """Whether the app needs to be told how much a zone's photos show before it can judge a low count."""
+    return whole_zone_limits() or st.session_state.get("limits_source", DEFAULT_LIMITS) == DEFAULT_LIMITS
+
+
+def size_picker(seg: str, label: str | None = None) -> None:
+    """The one-click question that lets a zone be judged, on whichever page it is asked."""
+    if whole_zone_limits():
+        views = st.session_state.setdefault("zone_view", {})
+        st.session_state.setdefault(f"view_{seg}", views.get(seg, "Not sure"))
+        views[seg] = st.selectbox(label or "How much of this zone do the photos show?", list(VIEW_SHARES),
+                                  key=f"view_{seg}",
+                                  help="The limits are for the whole zone. A photo of one corner can look safe "
+                                       "while the rest is packed, so without this the risk is Unknown.")
+    else:
+        areas = st.session_state.setdefault("photo_area", {})
+        names = list(AREA_SIZES)
+        st.session_state.setdefault(f"size_{seg}", next((n for n in names if AREA_SIZES[n] == areas.get(seg)), names[0]))
+        areas[seg] = AREA_SIZES[st.selectbox(label or "How big is the area in the photos?", names, key=f"size_{seg}",
+                                             help="A rough size is enough. It turns the count into how tightly "
+                                                  f"people stand ({PHOTO_AREA_PRESET} limits). For an exact figure, "
+                                                  "use Settings or a Site map.")]
 
 
 def zone_title(seg: str) -> str:

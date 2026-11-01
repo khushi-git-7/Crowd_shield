@@ -8,7 +8,7 @@ from crowdshield import benchmark
 from crowdshield.config import COUNTER_LABELS, NotEnoughMemory
 from crowdshield.points import on_tile_progress
 from detection import process_segment
-from shared_state import (DEFAULT_LIMITS, DEFAULT_THRESHOLDS, GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, PHOTO_AREA_PRESET, SEGMENTS, VIEW_SHARES, init_state, ist_now, limits_note, whole_zone_limits, zone_risk, zone_title,
+from shared_state import (DEFAULT_LIMITS, DEFAULT_THRESHOLDS, GLOBAL_CSS, MAX_IMAGES_PER_SEGMENT, SEGMENTS, init_state, ist_now, limits_note, size_picker, size_question, zone_risk, zone_title,
                           zone_label)
 from ui import next_step, page_header, risk_pill, section, working
 
@@ -155,20 +155,8 @@ if data:
     for col, (seg, d) in zip(cols, data.items()):
         with col:
             title = st.container()
-            if whole_zone_limits():  # the limits cover the whole zone, so the risk depends on how much is in view
-                views = st.session_state.setdefault("zone_view", {})
-                st.session_state.setdefault(f"view_{seg}", views.get(seg, "Not sure"))
-                views[seg] = st.selectbox("How much of this zone do the photos show?", list(VIEW_SHARES),
-                                          key=f"view_{seg}",
-                                          help="The limits are for the whole zone. A photo of one corner can look "
-                                               "safe while the rest is packed, so without this the risk is Unknown.")
-            elif st.session_state.limits_source == DEFAULT_LIMITS:
-                areas = st.session_state.setdefault("photo_area", {})
-                st.session_state.setdefault(f"photo_area_{seg}", areas.get(seg, 0))
-                areas[seg] = st.number_input("Area in the photos (m²)", 0, 1_000_000, step=10, key=f"photo_area_{seg}",
-                                             help="Roughly how much ground the photos show, so the count can be judged "
-                                                  f"by how tightly people stand ({PHOTO_AREA_PRESET}). Ten long steps "
-                                                  "by ten long steps is about 60 m².")
+            if size_question(seg):
+                size_picker(seg)
             risk = zone_risk(seg, d["count"])[0]
             title.markdown(f"<div style='display:flex;justify-content:space-between;align-items:center;gap:.4rem'>"
                            f"{zone_title(seg)}{risk_pill(risk)}</div>",

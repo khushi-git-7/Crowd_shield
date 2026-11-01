@@ -39,7 +39,8 @@ use_demo = source == SOURCES[0]
 link = url = ""
 if use_demo:
     st.caption("The demo steps through a 15-second clip of Paris Saint-Lazare station (Baidax, CC BY-SA 4.0, via "
-               "Wikimedia Commons) one second per sample, looping, so you can see the monitor work with no camera.")
+               "Wikimedia Commons) one second per sample, looping, so you can see the monitor work with no camera. The \"Full at\" numbers "
+               "are example limits set by eye: for a real place, set them from its measured area.")
 elif source == SOURCES[1]:
     camera = st.selectbox("Camera", list(live.PUBLIC_CAMERAS))
     link = live.PUBLIC_CAMERAS[camera]["link"]

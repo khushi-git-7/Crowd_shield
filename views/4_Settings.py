@@ -92,9 +92,9 @@ if note:
     (st.error if note.startswith("Not saved") else st.success)(note)
 
 # ── Save and load ──────────────────────────────────────────────────────────
-section("Save and load your work", "Nothing is stored on the server, so closing the tab clears your counts, limits, "
-        "contacts and drawn site. Save them to a file on your computer and load them next time. Photos are not "
-        "saved, only the numbers.")
+section("Save and load your work", "A refresh doesn't lose your work: this browser gets it back for 2 hours, from the server's "
+        "memory, and it is never written to disk. To keep it longer, save it to a file on your computer and load "
+        "it next time. The file holds the numbers, not the photos.")
 s1, s2 = st.columns(2)
 with s1:
     st.download_button("Save my session (JSON file)", export_session(st.session_state),
