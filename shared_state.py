@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import streamlit as st
 
-from crowdshield.risk import UNKNOWN, judge, risk_level
+from crowdshield.risk import UNKNOWN, judge, risk_level, thresholds_from_area
 
 # Constants live in the core package; re-exported here for the pages.
 from crowdshield.config import (  # noqa: F401
@@ -52,6 +52,7 @@ def init_state():
         st.session_state.detection_history = []
 
 
+PHOTO_AREA_PRESET = "Standard (mixed venues)"
 DEFAULT_LIMITS = (f"the defaults ({DEFAULT_THRESHOLDS['moderate']} / {DEFAULT_THRESHOLDS['high']} / "
                   f"{DEFAULT_THRESHOLDS['critical']} people in every zone)")
 
@@ -61,8 +62,8 @@ def limits_note() -> str:
     source = st.session_state.get("limits_source", DEFAULT_LIMITS)
     note = f"Risk limits come from {source}."
     if source == DEFAULT_LIMITS:
-        note += (" For limits based on each zone's real size, open the Site map and press Apply map areas "
-                 "(or enter areas in Settings).")
+        note += (" Those numbers know nothing about the place, so a low count shows as Unknown until you give the "
+                 "area in the photos below, or apply a Site map (or enter areas in Settings).")
     return note
 
 
@@ -97,7 +98,15 @@ def whole_zone_limits() -> bool:
 def zone_risk(seg: str, count: int) -> tuple[str, dict]:
     """(risk, limits in use) for a counted zone. The one place pages get this from, so they agree."""
     limits = get_seg_thresholds(seg)
-    return judge(count, limits, view_share(seg)) if whole_zone_limits() else (risk_level(count, limits), limits)
+    if whole_zone_limits():
+        return judge(count, limits, view_share(seg))
+    if st.session_state.get("limits_source", DEFAULT_LIMITS) == DEFAULT_LIMITS:
+        # The defaults know nothing of the place, so a low count needs the area in view before it means anything.
+        area = st.session_state.get("photo_area", {}).get(seg)
+        if not area:
+            return judge(count, limits, None)
+        limits = thresholds_from_area(area, FRUIN_PRESETS[PHOTO_AREA_PRESET])
+    return risk_level(count, limits), limits
 
 
 EXAMPLE_EVENT = {"A": ("IN_03.jpg", "Bathing ghat"), "B": ("IN_08.jpg", "Railway approach"),

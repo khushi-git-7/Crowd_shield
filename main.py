@@ -73,10 +73,22 @@ if (!window.csMenuCloser) {
 </script>"""
 
 
+# Nothing is kept on the server, so a refresh loses counts and monitoring: let the browser ask first.
+WARN_ON_LEAVE = """<script>
+window.csUnsaved = %s;
+if (!window.csLeaveGuard) {
+  window.csLeaveGuard = true;
+  window.addEventListener('beforeunload', e => { if (window.csUnsaved) { e.preventDefault(); e.returnValue = ''; } });
+}
+</script>"""
+
+
 def session_status() -> None:
     counted = len(st.session_state.crowd_data)
     channels = ready_channels(telegram_chat())
+    unsaved = counted or st.session_state.get("live_on") or any(st.session_state.uploaded_images.values())
     st.sidebar.html(CLOSE_MENU, unsafe_allow_javascript=True)
+    st.sidebar.html(WARN_ON_LEAVE % str(bool(unsaved)).lower(), unsafe_allow_javascript=True)
     st.sidebar.markdown(
         "<div class='rail-foot'>"
         "<div style='font-weight:700;color:#94a3b8;margin-bottom:.2rem'>This session</div>"

@@ -52,7 +52,7 @@ def test_upload_page_asks_how_each_zones_photos_overlap():
 def test_analysis_page_plans_a_relocation():
     # Default limits are 30 / 60 / 90: A is Critical, B is Safe, C is Moderate.
     crowd = {"A": zone_result(95), "B": zone_result(10), "C": zone_result(45)}
-    app = render(PAGES["Analysis"], crowd_data=crowd)
+    app = render(PAGES["Analysis"], crowd_data=crowd, limits_source="limits you set by hand in Settings")
     text = " ".join(block.value for block in app.markdown)
     assert "Relocate <b>~36</b> people to Zone <b>B</b>" in text
     assert any("main counting model (PET)" in c.value for c in app.caption)
@@ -290,3 +290,29 @@ def test_the_example_event_shows_the_whole_plan_with_no_photos():
     assert "CRITICAL" in text and "HIGH RISK" in text and "RECEIVING" in text and "nowhere safe" not in text
     assert any("Example event" in i.value for i in app.info)
     assert "EXAMPLE, not a real event." in app.code[0].value
+
+
+def test_default_limits_show_a_low_count_as_unknown_until_the_area_is_given():
+    crowd = {"A": zone_result(20)}
+    app = render(PAGES["Upload"], crowd_data=crowd)
+    assert ">Unknown<" in " ".join(block.value for block in app.markdown)
+    app.number_input(key="photo_area_A").set_value(100).run()
+    assert not app.exception, [e.message for e in app.exception]
+    assert ">Safe<" in " ".join(block.value for block in app.markdown)
+
+
+def test_default_limits_still_flag_a_big_crowd():
+    app = render(PAGES["Upload"], crowd_data={"A": zone_result(95)})
+    assert ">Critical<" in " ".join(block.value for block in app.markdown)
+
+
+def test_a_few_dots_show_as_no_crowd_found():
+    app = render(PAGES["Upload"], crowd_data={"A": zone_result(4)})
+    assert any(m.value == "No crowd found" for m in app.metric)
+    assert any("possible head" in c.value for c in app.caption)
+
+
+def test_video_example_has_three_zones_and_shows_a_surge_test():
+    app = render(PAGES["Video"])
+    assert '"name":"Upper walkway"' in app.get("iframe")[0].proto.srcdoc
+    assert any("surge alarm" in e.label for e in app.expander)
