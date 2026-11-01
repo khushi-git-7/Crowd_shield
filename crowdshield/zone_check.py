@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 
 MIN_GAP = 0.06  # an empty band at least this share of the picture separates two areas
-MIN_SIDE = 0.08  # each side needs this share of the box's heads, so a few stragglers don't count
+MIN_SIDE = 0.15  # each side needs this share of the box's heads, so a few stragglers don't count
 
 
 def has_gap(points: np.ndarray, box: tuple, width: int, height: int) -> bool:

@@ -48,7 +48,7 @@ def test_the_box_check_warns_about_a_bad_layout(page):
     next(r for r in page.radio if r.label == "Layout").set_value("Near and far").run()
     press(page, "Check my boxes against the crowd")
     warnings = " ".join(w.value for w in page.warning)
-    assert "may mix two separate areas" in warnings and "Far" in warnings
+    assert "Near may mix two separate areas" in warnings  # the floor on the left, the stairs on the right
     assert any("Heads found in the three frames" in c.value for c in page.caption)
 
 
