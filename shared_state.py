@@ -1,10 +1,11 @@
 """Shared session-state defaults and constants used across pages."""
 
-import secrets
 import time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from crowdshield.risk import UNKNOWN, judge, risk_level, thresholds_from_area
 
@@ -79,9 +80,10 @@ def ist_now(fmt: str = "%H:%M:%S IST") -> str:
     return datetime.now(IST).strftime(fmt)
 
 
-# A refresh starts a new Streamlit session. Work is kept in server memory for a while, and a cookie with a
-# random token lets this browser, and only this browser, find it again. Unlike a link, it can't be shared by accident.
-COOKIE = "cs_session"
+# A refresh starts a new Streamlit session. Work is kept in server memory for a while, and a random token held in
+# the browser lets this browser, and only this browser, find it again. Unlike a link, it can't be shared by accident.
+# It comes through a small component: Streamlit Community Cloud doesn't pass cookies on to the app.
+_token_component = components.declare_component("browser_token", path=str(Path(__file__).parent / "assets" / "browser_token"))
 KEEP_SECONDS = 2 * 60 * 60
 KEEP_SESSIONS = 12  # the free server's memory is small; the oldest go first
 KEEP = ("agents", "uploaded_images", "image_names", "image_sources", "crowd_data", "thresholds", "seg_areas",
@@ -96,30 +98,32 @@ def _kept_sessions() -> dict:
 
 
 def browser_token() -> str | None:
-    return st.context.cookies.get(COOKIE)
+    """This browser's token. None on the first run: the component answers, and that reruns the app."""
+    with st.sidebar:
+        return _token_component(key="browser_token", default=None)
 
 
 def restore_session() -> None:
     """Bring back this browser's work after a refresh. Runs before anything else on a new session."""
-    if "session_token" in st.session_state:
+    token = browser_token()
+    if not token or "session_token" in st.session_state:
         return
-    token, kept = browser_token(), _kept_sessions()
-    saved = kept.get(token)
+    saved = _kept_sessions().get(token)
     if saved and time.time() - saved["at"] < KEEP_SECONDS:
         st.session_state.update(saved["state"])
-    st.session_state.session_token = token or secrets.token_hex(16)
+    st.session_state.session_token = token
 
 
 def remember_session() -> None:
-    """Keep this session's work, and give the browser its token."""
-    token, kept, now = st.session_state.session_token, _kept_sessions(), time.time()
+    """Keep this session's work for this browser."""
+    token, kept, now = st.session_state.get("session_token"), _kept_sessions(), time.time()
+    if not token:  # the browser hasn't answered yet, or can't store a token
+        return
     kept[token] = {"at": now, "state": {k: st.session_state[k] for k in KEEP if k in st.session_state}}
     for old in [t for t, s in kept.items() if now - s["at"] >= KEEP_SECONDS]:
         del kept[old]
     for old in sorted(kept, key=lambda t: kept[t]["at"])[:-KEEP_SESSIONS]:
         del kept[old]
-    st.sidebar.html(f"<script>document.cookie = '{COOKIE}={token}; path=/; max-age={KEEP_SECONDS}; SameSite=Lax';"
-                    "</script>", unsafe_allow_javascript=True)
 
 
 def telegram_chat() -> str | None:
