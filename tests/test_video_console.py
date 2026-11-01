@@ -20,3 +20,16 @@ def test_the_console_carries_the_clip_zones_readings_and_points():
     assert data["rows"][0]["per_m2"] is None  # NaN would break the page's JSON
     assert data["events"] == [{"t": 1.0, "text": "A speeding up"}]
     assert html.count("data:video/mp4;base64,") == 1 and "__DATA__" not in html and "__SRC__" not in html
+
+
+def test_the_console_says_the_surge_alarm_is_off_for_a_moving_camera():
+    from video_console import console_html
+
+    html = console_html(b"x", 30, (720, 1280), [], [], [], surge_off=True)
+    assert '"surgeOff":true' in html and "Surge alarm off: the camera moves" in html
+
+
+def test_the_overlay_follows_the_videos_height_as_well_as_its_width():
+    from video_console import console_html
+
+    assert "cv.height !== ch" in console_html(b"x", 30, (720, 1280), [], [], [])

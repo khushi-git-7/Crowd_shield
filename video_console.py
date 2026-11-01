@@ -25,13 +25,13 @@ def _clean(value):
 
 def console_html(video: bytes, fps: float, size: tuple[int, int], zones: list[dict], rows: list[dict],
                  events: list[dict], points: list | None = None, count_every: int | None = None,
-                 calibrated: bool = False) -> str:
+                 calibrated: bool = False, surge_off: bool = False) -> str:
     """The console as one HTML page. `zones`: [{"name", "polygon" [(x, y)...], "capacity"}], in the clip's
     pixels; `rows`: the monitor's readings; `points`: head points (x, y) at each count, every `count_every`
     frames."""
     data = {
         "fps": fps, "w": size[0], "h": size[1], "every": count_every or max(1, round(fps)),
-        "calibrated": calibrated, "risk": RISK, "colours": ZONE_COLOURS,
+        "calibrated": calibrated, "surgeOff": surge_off, "risk": RISK, "colours": ZONE_COLOURS,
         "zones": [{"name": z["name"], "poly": [[float(x), float(y)] for x, y in z["polygon"]],
                    "cap": z.get("capacity")} for z in zones],
         "rows": [{k: _clean(r.get(k)) for k in ("t", "zone", "people", "per_m2", "level")} for r in rows],
@@ -45,8 +45,8 @@ def console_html(video: bytes, fps: float, size: tuple[int, int], zones: list[di
 
 def show_console(video: bytes, fps: float, size: tuple[int, int], zones: list[dict], rows: list[dict],
                  events: list[dict], points: list | None = None, count_every: int | None = None,
-                 calibrated: bool = False, height: int = 700) -> None:
-    components.html(console_html(video, fps, size, zones, rows, events, points, count_every, calibrated),
+                 calibrated: bool = False, height: int = 700, surge_off: bool = False) -> None:
+    components.html(console_html(video, fps, size, zones, rows, events, points, count_every, calibrated, surge_off),
                     height=height, scrolling=True)
 
 
@@ -70,7 +70,7 @@ _TEMPLATE = r"""<!doctype html><html><head><meta charset="utf-8">
     .speed, #dots { display:none; }
     svg { height:110px; }
   }
-  .stage { position:relative; border-radius:12px; overflow:hidden; background:#000; line-height:0; }
+  .stage { position:relative; margin:0 auto; border-radius:12px; overflow:hidden; background:#000; line-height:0; }
   video { width:100%; display:block; }
   canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
   .hud { position:absolute; top:10px; left:10px; right:10px; display:flex; justify-content:space-between;
@@ -224,7 +224,8 @@ function pill(text, x0, y0, bg) {
 }
 function drawOverlay(t) {
   const r = v.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-  if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+  const cw = Math.round(r.width * dpr), ch = Math.round(r.height * dpr);
+  if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, r.width, r.height);
   const sx = r.width / D.w, sy = r.height / D.h;
   const looks = D.zones.map((z, i) => { const rd = reading(z.name, t), lv = rd && level(rd, z.cap);
@@ -250,6 +251,7 @@ function drawOverlay(t) {
 }
 
 // ---- tie it together
+if (D.h > D.w) v.parentElement.style.maxWidth = Math.round(620 * D.w / D.h) + 'px';  // a tall clip fits the screen
 const banner = document.getElementById('banner');
 function update() {
   const t = v.currentTime || 0;
@@ -283,7 +285,8 @@ function update() {
   const fired = D.events.filter(e => e.t <= t);
   status.className = 'status ' + (D.events.length ? 'alarm' : 'ok');
   status.textContent = D.events.length ? `Surge alarm at ${D.events.map(e => e.t.toFixed(1) + ' s').join(', ')}` +
-    (fired.length ? '' : ' (still to come)') : 'No surge: nobody suddenly started moving much faster than the crowd.';
+    (fired.length ? '' : ' (still to come)') : D.surgeOff ? 'Surge alarm off: the camera moves in this clip.' :
+    'No surge: nobody suddenly started moving much faster than the crowd.';
   if (playhead) { const x = P.l + (W - P.l - P.r) * t / duration(); playhead.setAttribute('x1', x); playhead.setAttribute('x2', x); }
   drawOverlay(t);
 }

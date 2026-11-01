@@ -63,7 +63,8 @@ st.markdown("""
 def show_result(clean: bytes, annotated: bytes | None, fps: float, size, zones: list[dict], rows: list[dict],
                 events: list, points, count_every, calibrated: bool, handheld: bool = False, key: str = "r"):
     """The console (clean clip, analysis drawn live on top, side panel, timeline), then the details."""
-    show_console(clean, fps, size, zones, rows, [] if handheld else events, points, count_every, calibrated)
+    show_console(clean, fps, size, zones, rows, [] if handheld else events, points, count_every, calibrated,
+                 surge_off=handheld)
     st.caption("Every head the model sees gets a dot. The numbers add up only the heads inside the boxes, so dots "
                "outside a box are seen but not counted in any zone.")
     if handheld:
@@ -278,13 +279,21 @@ with tab_own:
                 problem = f"Couldn't check the boxes ({type(exc).__name__}). You can still analyse the clip."
             finally:
                 os.remove(path)
-            status.error(problem) if problem else status.empty()
+            if problem:
+                status.error(problem)
+            else:
+                status.empty()
         found = st.session_state.get("video_heads", {}).get(digest)
-        heads = np.vstack(found) if found else None
+        # With a moving camera the frames show different ground, so only the first lines up with this picture.
+        heads = None if not found else found[0] if handheld else np.vstack(found)
         picture.image(preview(first, corners, zones, heads), width="stretch",
-                      caption=(f"Your {seconds:.0f}-second clip with the zones" + (", and the heads found in three "
-                               "frames of it" if found else "")))
-        if found:
+                      caption=(f"Your {seconds:.0f}-second clip with the zones" + (
+                          "" if not found else ", and the heads found in this frame" if handheld else
+                          ", and the heads found in three frames of it")))
+        if found and handheld:
+            st.info("Boxes can't be checked on this clip: the camera moves, so a box covers different ground from one "
+                    "moment to the next, and its count changes with the view as well as the crowd.")
+        elif found:
             fit = check_zones(heads, zones, w, h)
             st.caption("Heads found in the three frames: " + " · ".join(f"{n} {c}" for n, c in fit["heads"].items()))
             for name in fit["mixed"]:

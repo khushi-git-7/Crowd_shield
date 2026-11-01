@@ -118,9 +118,21 @@ def test_a_custom_layout_goes_all_the_way_through_the_analysis(page, monkeypatch
 def test_the_results_of_a_check_stay_in_place_on_the_next_run(page):
     """The page's layout must match between runs, or an old copy of the message stays on screen, greyed out."""
     press(page, "Check my boxes against the crowd")
-    def layout():  # a pressed button lists its tooltip as an extra entry here; it isn't a place on the page
-        return [type(e).__name__ for e in page.main if type(e).__name__ != "Help"]
+    def layout():
+        return [type(e).__name__ for e in page.main]
 
     pressed = layout()
+    assert "Help" not in pressed  # a bare expression returning an element makes Streamlit print its documentation
     page.run()
     assert layout() == pressed
+
+
+def test_a_moving_camera_gets_no_verdict_on_its_boxes(page, monkeypatch):
+    from crowdshield import motion
+
+    monkeypatch.setattr(motion, "CAMERA_MOVING", -1.0)
+    page.run()
+    choose(page, "Near and far")
+    press(page, "Check my boxes against the crowd")
+    assert any("Boxes can't be checked on this clip" in i.value for i in page.info)
+    assert not page.success and not any("may mix" in w.value for w in page.warning)
