@@ -35,7 +35,7 @@ GLOBAL_CSS = """
   }
 
   /* ── Frame ────────────────────────────────────────────── */
-  [data-testid="stHeader"] { background: transparent; }
+  [data-testid="stHeader"] { background: rgba(245,247,250,.92); backdrop-filter: blur(6px); }  /* so page text never runs under Share */
   [data-testid="stDecoration"] { display: none; }
   .main .block-container, [data-testid="stMainBlockContainer"] {
     max-width: 1320px; padding-top: 2rem; padding-left: 2.25rem; padding-right: 2.25rem;
@@ -178,7 +178,6 @@ GLOBAL_CSS = """
   /* Button labels wrap instead of ending in "..." when a button is narrow. */
   .stButton button p, .stDownloadButton button p { white-space: normal; }
   @media (max-width: 640px) {  /* phones: less frame, smaller type, numbers two by two */
-    [data-testid="stHeader"] { background: rgba(245,247,250,.92); backdrop-filter: blur(6px); }
     /* The risk-limits table stays a grid on a phone, so each number box keeps its column heading. */
     .st-key-limits [data-testid="stHorizontalBlock"] { flex-wrap: nowrap; gap: .4rem; }
     .st-key-limits [data-testid="stColumn"] { min-width: 0 !important; }
@@ -365,7 +364,9 @@ def zone_picker(width: int, height: int, key: str, extra: dict | None = None,
     for i, box in enumerate(boxes):
         default_name, fx0, fy0, fx1, fy1 = box[:5]
         c1, c2 = st.columns(2)
-        name = c1.text_input(f"Zone {i + 1} name", default_name, key=f"{key}_name_{layout}_{i}")
+        name = c1.text_input(f"Zone {i + 1} name", default_name, key=f"{key}_name_{layout}_{i}").strip() or default_name
+        if name in capacities:  # every reading is filed under its zone's name, so two can't share one
+            name = f"{name} {i + 1}"
         capacities[name] = int(c2.number_input(
             "Full at (people)", 1, 100_000, box[5] if len(box) > 5 else capacity, key=f"{key}_cap_{layout}_{i}",
             help="The most people this part of the picture should hold. A zone turns amber at half of it, orange at "
@@ -373,8 +374,11 @@ def zone_picker(width: int, height: int, key: str, extra: dict | None = None,
         if layout == "Custom boxes":
             x0, x1 = st.slider(f"{name}: left to right (%)", 0, 100, (int(i * 100 / len(boxes)),
                                int((i + 1) * 100 / len(boxes))), key=f"{key}_x_{i}")
-            y0, y1 = st.slider(f"{name}: top to bottom (%)", 0, 100, (30, 100), key=f"{key}_y_{i}")
-            fx0, fx1, fy0, fy1 = x0 / 100, x1 / 100, y0 / 100, y1 / 100
+            y0, y1 = st.slider(f"{name}: top to bottom (%)", 0, 100, (0, 100), key=f"{key}_y_{i}")
+            x1, y1 = max(x1, x0 + 1), max(y1, y0 + 1)  # both ends on one number would make a box with no size
+            fx0, fx1, fy0, fy1 = x0 / 100, min(x1, 100) / 100, y0 / 100, min(y1, 100) / 100
+            if x0 == 100 or y0 == 100:
+                fx0, fy0 = min(fx0, 0.99), min(fy0, 0.99)
         w, h = width, height
         zones.append((name, [(w * fx0, h * fy0), (w * fx1, h * fy0), (w * fx1, h * fy1), (w * fx0, h * fy1)]))
     return zones, capacities

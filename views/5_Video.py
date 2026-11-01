@@ -235,7 +235,7 @@ with tab_own:
                    "surge alarm and walking speed would measure the camera, not the crowd, so they're switched off.")
 
     section("2. Mark the zones")
-    left, right = st.columns([3, 2], gap="large")
+    left, right = st.container(key="stack_zones").columns([3, 2], gap="large")
     with right:
         zones, capacities = zone_picker(w, h, "vz")
 
@@ -259,23 +259,26 @@ with tab_own:
     with left:
         picture = st.empty()
         st.caption("A box should hold one space: don't let it take in two floors, or a balcony and the ground below.")
+        status = st.empty()  # always here, so what follows keeps its place on the page from one run to the next
         if st.button("Check my boxes against the crowd", icon=":material/rule:",
                      help="Finds the heads in three frames of the clip and checks your boxes against them."):
             from crowdshield.config import NotEnoughMemory
             from crowdshield.points import count_points
 
-            job = working("Checking your boxes", "Finding the heads in three frames of your clip...")
+            with status.container():
+                job = working("Checking your boxes", "Finding the heads in three frames of your clip...")
             path = clip_on_disk(data_bytes, suffix)
+            problem = None
             try:
                 st.session_state.video_heads = {digest: [count_points(f)["points"][:, ::-1]
                                                          for f in sample_frames(path, n_frames)]}
             except NotEnoughMemory as exc:
-                st.error(str(exc))
+                problem = str(exc)
             except Exception as exc:  # no counting model on this machine
-                st.error(f"Couldn't check the boxes ({type(exc).__name__}). You can still analyse the clip.")
+                problem = f"Couldn't check the boxes ({type(exc).__name__}). You can still analyse the clip."
             finally:
-                job.done()
                 os.remove(path)
+            status.error(problem) if problem else status.empty()
         found = st.session_state.get("video_heads", {}).get(digest)
         heads = np.vstack(found) if found else None
         picture.image(preview(first, corners, zones, heads), width="stretch",
@@ -290,9 +293,15 @@ with tab_own:
             if fit["outside"] > 0.1 * max(fit["total"], 1):
                 st.warning(f"{fit['outside']} of {fit['total']} heads are outside every box, so they won't be counted "
                            "in any zone.", icon=":material/warning:")
-            if not fit["mixed"] and fit["outside"] <= 0.1 * max(fit["total"], 1):
-                st.success("Your boxes fit the crowd. This is a rough check, so still look at the dots: it can miss "
-                           "two areas when people fill the space between them.")
+            for a, b in fit["overlap"]:
+                st.warning(f"{a} and {b} overlap, so people in the shared part are counted twice in the total.",
+                           icon=":material/warning:")
+            for name in fit["wide"]:
+                st.info(f"{name} covers nearly the whole picture, so it gives one overall count and can't tell separate "
+                        "floors or areas apart. To watch them separately, use Custom boxes.")
+            if not (fit["mixed"] or fit["wide"] or fit["overlap"]) and fit["outside"] <= 0.1 * max(fit["total"], 1):
+                st.success("No problem found with these boxes. This is a rough check, so still look at the dots: it can "
+                           "miss two areas when people fill the space between them.")
 
     settings = json.dumps([digest, zones, capacities, corners], default=str)
     run = st.button("Analyse video", type="primary", icon=":material/play_arrow:")

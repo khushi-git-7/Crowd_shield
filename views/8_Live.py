@@ -92,7 +92,7 @@ if st.session_state.get("live_first") is None:
 first = st.session_state.live_first
 h, w = first.shape[:2]
 
-left, right = st.columns([3, 2])
+left, right = st.container(key="stack_camera").columns([3, 2])
 with right:
     st.markdown("### Zones to watch")
     picked, caps = zone_picker(w, h, "lz_demo" if use_demo else "lz", extra=DEMO_LAYOUT if use_demo else None)
@@ -210,7 +210,7 @@ def show():
     cards.append(("Sampling", f"every {interval} s", f"last count took {state['seconds']:.0f} s · {state['counter']}"))
     accents.append(None)
     kpi_cards(cards, accents)
-    pic, chart = st.columns([3, 2])
+    pic, chart = st.container(key="stack_latest").columns([3, 2])
     pic.image(draw(state["frame"], levels, latest_points(state)), width="stretch",
               caption="Latest frame: a dot on every head counted, zones coloured by risk. Check the dots.")
     with chart:
