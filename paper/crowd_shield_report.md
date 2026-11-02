@@ -62,6 +62,14 @@ code and is covered by tests.
    Risk or Critical zone is paired with the nearest reachable Safe zone that has room, counting
    people already sent there so no zone is overfilled. The route is drawn on the map, and each
    zone's contact gets an email.
+6. **Saying what it doesn't know.** A photo alone can't show how much ground it covers, so a low
+   count is labelled Unknown, never Safe, until the user gives a rough size or applies a site map.
+   A count already past the limits stays High Risk or Critical. Unknown zones receive nobody in the
+   evacuation plan. Before a video or live camera is watched, the heads in a few frames are checked
+   against the zone boxes: an empty band across a box (as between a balcony and the floor below)
+   suggests it mixes two spaces. On the Paris clip this flagged a badly drawn box in 15 of 15
+   samples and never the right boxes; on simulated crowds it caught 191 of 200 two-floor scenes and
+   wrongly flagged 10 of 200 even crowds. It gives no verdict when the camera moves.
 
 ## 3. Counting people
 
@@ -228,7 +236,9 @@ practical on an 8 GB laptop; live video needs a GPU.
 - Density and pressure need a calibrated, fixed camera, and live video needs a GPU.
 - The early warning extends a straight-line trend.
 - The movement alarm was validated on 3 scenes.
-- Map zones in the demos are illustrative, not official plans.
+- Map zones in the demos are illustrative, not official plans, and the video demo's zone limits are
+  set by eye.
+- The zone-box check can miss a small mix of two spaces, and can't judge a moving camera.
 - The counter still undercounts some station scenes (a Thane photo by 27%).
 
 ## 8. Reproducibility
