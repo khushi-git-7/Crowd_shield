@@ -55,15 +55,21 @@ GeoJSON. With real counts from the Count people in a photo page, or zones you dr
 becomes your own site's live view.
 
 The **Analyse a video** page puts this together in a video console. It opens on an example already analysed
-(15 s of Paris Saint-Lazare station). The clip plays clean, and the browser draws the analysis on top as it
+(15 s of Paris Saint-Lazare station, with the stairs, concourse and upper walkway as zones; their limits are
+examples set by eye, not measurements). The clip plays clean, and the browser draws the analysis on top as it
 plays (`video_console.py`): each zone as a soft area in the colour of its risk with its live count, and a dot
 on every head counted at that second. Beside it, each zone's count, fill against capacity and risk follow
 the playhead; under it, a timeline of every zone has a playhead you can click to jump to any second. With
 your own clip you pick a zone layout (whole picture, left and right, near and far, four quarters or custom
-boxes) and how many people each zone holds, and get the same console, plus a CSV of every reading and a
+boxes) and the number of people at which each zone is full, and get the same console, plus a CSV of every reading and a
 downloadable video with the dots and zones drawn in (H.264, plays anywhere). Marking a floor rectangle of known size switches the zones to people per m², and adds
 walking speed, crowd pressure and time-to-danger.
-It streams the clip frame by frame instead of loading it whole, so memory stays
+Before analysing, **Check my boxes against the crowd** finds the heads in three frames of your clip
+(`crowdshield/zone_check.py`) and warns when an empty band runs across a box, which often means it mixes two
+spaces such as a balcony and the floor below, when many heads fall outside every box, or when boxes overlap. On
+the Paris clip it flagged a badly drawn box in 15 of 15 samples and never flagged the right boxes; on simulated
+crowds it caught 191 of 200 two-floor scenes and wrongly flagged 10 of 200 even crowds. It can miss a small mix,
+and it gives no verdict when the camera moves. It streams the clip frame by frame instead of loading it whole, so memory stays
 flat however long the clip is. The hosted demo analyses up to 20 seconds (set
 `CROWDSHIELD_MAX_VIDEO_S` to raise it on your own machine), and a 15-second
 sample from a fixed camera at Paris Saint-Lazare station is built in: Baidax,
@@ -215,6 +221,11 @@ The intervals come from a paired bootstrap over the test photos
 only if the ShanghaiTech interval included zero: it did, so the drop there is within noise. The gain on
 UCF-QNRF is real. The Indian gain is large, but 10 photos are too few to prove it, so labelling the rest
 of the India set comes next. The Mumbai photo is now counted as 455 (full detail) or 629 (online server).
+
+The risk label is only as good as what the app knows about the place. A photo alone can't show how much
+ground it covers, so a low count shows as **Unknown**, never Safe, until you give a rough size or apply a site
+map. A count past the limits still shows High Risk or Critical. Unknown zones take no people in the plan, and
+**Load the example event** on the home page shows the whole plan in one click with no photos of your own.
 
 The **How accurate is it?** page in the app shows per-scene accuracy and every photo with the true and
 the model's head points (91.1% overall at full detail with the correction the app ships; the hardest photo is now Thane station, counted

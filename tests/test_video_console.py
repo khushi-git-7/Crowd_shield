@@ -29,6 +29,13 @@ def test_the_console_says_the_surge_alarm_is_off_for_a_moving_camera():
     assert '"surgeOff":true' in html and "Surge alarm off: the camera moves" in html
 
 
+def test_a_zone_name_cannot_close_the_page_script():
+    from video_console import console_html
+
+    html = console_html(b"x", 30, (640, 360), [{"name": "</script>", "polygon": [(0, 0), (1, 1)]}], [], [])
+    assert "</script><" not in html.split('"name":', 1)[1].split('"poly"', 1)[0]
+
+
 def test_the_overlay_follows_the_videos_height_as_well_as_its_width():
     from video_console import console_html
 

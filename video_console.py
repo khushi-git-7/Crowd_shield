@@ -12,7 +12,7 @@ from __future__ import annotations
 import base64
 import json
 
-import streamlit.components.v1 as components
+import streamlit as st
 
 RISK = {"Safe": "#10b981", "Moderate": "#f59e0b", "High Risk": "#f97316", "Critical": "#ef4444",
         "Normal": "#10b981", "Crowded": "#f59e0b", "Dangerous": "#f97316", "Crush risk": "#ef4444"}
@@ -39,15 +39,15 @@ def console_html(video: bytes, fps: float, size: tuple[int, int], zones: list[di
         "points": points or [],
     }
     src = "data:video/mp4;base64," + base64.b64encode(video).decode()
-    return (_TEMPLATE.replace("__DATA__", json.dumps(data, separators=(",", ":")))
+    return (_TEMPLATE.replace("__DATA__", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))
             .replace("__SRC__", src))
 
 
 def show_console(video: bytes, fps: float, size: tuple[int, int], zones: list[dict], rows: list[dict],
                  events: list[dict], points: list | None = None, count_every: int | None = None,
                  calibrated: bool = False, height: int = 700, surge_off: bool = False) -> None:
-    components.html(console_html(video, fps, size, zones, rows, events, points, count_every, calibrated, surge_off),
-                    height=height, scrolling=True)
+    st.iframe(console_html(video, fps, size, zones, rows, events, points, count_every, calibrated, surge_off),
+              height=height)
 
 
 _TEMPLATE = r"""<!doctype html><html><head><meta charset="utf-8">
@@ -246,7 +246,7 @@ function drawOverlay(t) {
   D.zones.forEach((z, i) => {
     const rd = looks[i].rd, xs = z.poly.map(p => p[0] * sx), ys = z.poly.map(p => p[1] * sy);
     const label = `${z.name} · ${rd ? (D.calibrated ? (rd.per_m2 || 0).toFixed(1) + '/m²' : Math.round(rd.people)) : '–'}`;
-    pill(label, Math.min(...xs) + 8, Math.min(...ys) + 8, looks[i].c);
+    pill(label, Math.min(...xs) + 8, Math.max(Math.min(...ys) + 8, 44), looks[i].c);  // below the clock and total chips
   });
 }
 
