@@ -13,7 +13,7 @@ import streamlit as st
 
 from crowdshield import counting
 from shared_state import GLOBAL_CSS, init_state
-from ui import nav_link, page_header, section, working, zone_picker
+from ui import box_check_report, nav_link, page_header, section, working, zone_picker
 from video_console import show_console
 
 st.set_page_config(page_title="Analyse a video • Crowd Shield", page_icon=None, layout="wide")
@@ -294,23 +294,7 @@ with tab_own:
             st.info("Boxes can't be checked on this clip: the camera moves, so a box covers different ground from one "
                     "moment to the next, and its count changes with the view as well as the crowd.")
         elif found:
-            fit = check_zones(heads, zones, w, h)
-            st.caption("Heads found in the three frames: " + " · ".join(f"{n} {c}" for n, c in fit["heads"].items()))
-            for name in fit["mixed"]:
-                st.warning(f"{name} may mix two separate areas: an empty band runs across it, like the gap between a "
-                           "balcony and the floor below. Use Custom boxes to split it.", icon=":material/warning:")
-            if fit["outside"] > 0.1 * max(fit["total"], 1):
-                st.warning(f"{fit['outside']} of {fit['total']} heads are outside every box, so they won't be counted "
-                           "in any zone.", icon=":material/warning:")
-            for a, b in fit["overlap"]:
-                st.warning(f"{a} and {b} overlap, so people in the shared part are counted twice in the total.",
-                           icon=":material/warning:")
-            for name in fit["wide"]:
-                st.info(f"{name} covers nearly the whole picture, so it gives one overall count and can't tell separate "
-                        "floors or areas apart. To watch them separately, use Custom boxes.")
-            if not (fit["mixed"] or fit["wide"] or fit["overlap"]) and fit["outside"] <= 0.1 * max(fit["total"], 1):
-                st.success("No problem found with these boxes. This is a rough check, so still look at the dots: it can "
-                           "miss two areas when people fill the space between them.")
+            box_check_report(check_zones(heads, zones, w, h), "in the three frames")
 
     settings = json.dumps([digest, zones, capacities, corners], default=str)
     run = st.button("Analyse video", type="primary", icon=":material/play_arrow:")

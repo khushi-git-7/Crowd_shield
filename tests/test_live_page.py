@@ -120,3 +120,20 @@ def test_changing_the_camera_says_monitoring_stopped(monkeypatch):
     app.session_state["live_key"] = "another"
     app.radio[0].set_value("Demo feed (a recorded clip played as if live)").run()
     assert any("Monitoring stopped" in w.value for w in app.warning)
+
+
+def test_the_live_camera_checks_its_boxes_against_the_crowd(monkeypatch):
+    import numpy as np
+
+    from crowdshield import points
+
+    rng = np.random.default_rng(4)
+    upper = np.c_[rng.uniform(40, 100, 60), 480 * rng.random(60)]  # rows, columns: a balcony
+    lower = np.c_[rng.uniform(160, 340, 80), 480 * rng.random(80)]  # and the floor below it
+    monkeypatch.setattr(points, "count_points", lambda frame: {"points": np.vstack([upper, lower])})
+    app = render()
+    next(r for r in app.radio if r.label == "Layout").set_value("Whole picture").run()
+    next(b for b in app.button if b.label == "Check my boxes against the crowd").click().run()
+    assert not app.exception, [e.message for e in app.exception]
+    assert any("Heads found in this picture" in c.value for c in app.caption)
+    assert any("covers nearly the whole picture" in i.value for i in app.info)

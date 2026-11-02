@@ -227,6 +227,10 @@ ground it covers, so a low count shows as **Unknown**, never Safe, until you giv
 map. A count past the limits still shows High Risk or Critical. Unknown zones take no people in the plan, and
 **Load the example event** on the home page shows the whole plan in one click with no photos of your own.
 
+In this table each model's count correction was fitted the same way, on held-out ShanghaiTech training
+photos, so the two versions are compared fairly. The app ships one fixed correction, and with it the
+same 10 photos score 91.1%, the figure the app shows.
+
 The **How accurate is it?** page in the app shows per-scene accuracy and every photo with the true and
 the model's head points (91.1% overall at full detail with the correction the app ships; the hardest photo is now Thane station, counted
 too low: 311 against 425).

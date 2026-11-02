@@ -100,6 +100,8 @@ with right:
 
 
 from crowdshield.detection import draw_head_dots  # noqa: E402
+from crowdshield.zone_check import check_zones  # noqa: E402
+from ui import box_check_report  # noqa: E402
 from crowdshield.video_render import PointRecorder, _label  # noqa: E402
 
 
@@ -115,7 +117,32 @@ def draw(frame, levels=None, points=None):
 
 
 with left:
-    st.image(draw(first), caption="The camera right now, with your zones", width="stretch")
+    picture = st.empty()
+    st.caption("A box should hold one space: don't let it take in two floors, or a balcony and the ground below.")
+    status = st.empty()  # always here, so the page keeps its layout from one run to the next
+    if st.button("Check my boxes against the crowd", key="live_check", icon=":material/rule:",
+                 help="Finds the heads in this picture and checks your boxes against them."):
+        from crowdshield.points import count_points
+
+        with status.container():
+            job = working("Checking your boxes", "Finding the heads in this picture...")
+        problem = None
+        try:
+            st.session_state.live_heads = {key: count_points(first)["points"]}
+        except NotEnoughMemory as exc:
+            problem = str(exc)
+        except Exception as exc:  # no counting model on this machine
+            problem = f"Couldn't check the boxes ({type(exc).__name__}). You can still start monitoring."
+        if problem:
+            status.error(problem)
+        else:
+            status.empty()
+    found = st.session_state.get("live_heads", {}).get(key)
+    picture.image(draw(first, points=found), width="stretch",
+                  caption="The camera right now, with your zones" + (", and the heads found in it" if found is not None
+                                                                     else ""))
+    if found is not None:
+        box_check_report(check_zones(found[:, ::-1], picked, w, h), "in this picture")
 
 # ---- 3. Run ------------------------------------------------------------------
 st.markdown("---")

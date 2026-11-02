@@ -384,6 +384,26 @@ def zone_picker(width: int, height: int, key: str, extra: dict | None = None,
     return zones, capacities
 
 
+def box_check_report(fit: dict, where: str) -> None:
+    """What `crowdshield.zone_check.check_zones` found, in plain words: the same on every page that has zone boxes."""
+    st.caption(f"Heads found {where}: " + " · ".join(f"{n} {c}" for n, c in fit["heads"].items()))
+    for name in fit["mixed"]:
+        st.warning(f"{name} may mix two separate areas: an empty band runs across it, like the gap between a "
+                   "balcony and the floor below. Use Custom boxes to split it.", icon=":material/warning:")
+    if fit["outside"] > 0.1 * max(fit["total"], 1):
+        st.warning(f"{fit['outside']} of {fit['total']} heads are outside every box, so they won't be counted "
+                   "in any zone.", icon=":material/warning:")
+    for a, b in fit["overlap"]:
+        st.warning(f"{a} and {b} overlap, so people in the shared part are counted twice in the total.",
+                   icon=":material/warning:")
+    for name in fit["wide"]:
+        st.info(f"{name} covers nearly the whole picture, so it gives one overall count and can't tell separate "
+                "floors or areas apart. To watch them separately, use Custom boxes.")
+    if not (fit["mixed"] or fit["wide"] or fit["overlap"]) and fit["outside"] <= 0.1 * max(fit["total"], 1):
+        st.success("No problem found with these boxes. This is a rough check, so still look at the dots: it can "
+                   "miss two areas when people fill the space between them.")
+
+
 def next_step(text: str, page: str, label: str, url: str, icon: str = ":material/arrow_forward:") -> None:
     """The end of a page: one line on what to do next, and the link that does it, so nobody gets stuck."""
     st.markdown(f"<div class='sec' style='margin-top:2rem'>Next</div><div class='sec-cap'>{html.escape(text)}</div>",
