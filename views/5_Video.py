@@ -286,7 +286,7 @@ with tab_own:
         found = st.session_state.get("video_heads", {}).get(digest)
         # With a moving camera the frames show different ground, so only the first lines up with this picture.
         heads = None if not found else found[0] if handheld else np.vstack(found)
-        picture.image(preview(first, corners, zones, heads), width="stretch",
+        picture.image(preview(first, corners, zones, heads), width="stretch" if w >= h else 340,  # a tall clip stays on screen
                       caption=(f"Your {seconds:.0f}-second clip with the zones" + (
                           "" if not found else ", and the heads found in this frame" if handheld else
                           ", and the heads found in three frames of it")))
