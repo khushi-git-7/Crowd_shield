@@ -256,6 +256,15 @@ scenes, each ending with everyone suddenly running away.
   score briefly touches the alarm line while people are still walking. It
   doesn't fire, because the alarm needs half a second above the line, but the
   margin there is small.
+- **Real footage is harder.** The same alarm, unchanged, was run on the Abnormal
+  High-density Crowds set (real incidents, DbCL licence; [eval/evaluate_motion_realworld.py](eval/evaluate_motion_realworld.py),
+  [results/surge_realworld](results/surge_realworld)). Of three views of the 2019 Times
+  Square scare it caught one, 3 s after the panic began, and missed two wide shots where
+  the running crowd fills only a small part of the picture. Over 6 minutes of normal crowd
+  on Las Vegas CCTV it raised no false alarm. The other clips start mid-panic, so the alarm
+  has no calm stretch to learn from and they could not be scored. The setting was not
+  tuned on these clips, so the result stays a fair test, and it shows the alarm needs work
+  before it can be relied on.
 
 Details: [results/umn](results/umn), [eval/evaluate_motion.py](eval/evaluate_motion.py).
 

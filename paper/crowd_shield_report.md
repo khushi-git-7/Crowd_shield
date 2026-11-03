@@ -235,7 +235,9 @@ practical on an 8 GB laptop; live video needs a GPU.
 - The India test is a pilot: 10 of 105 photos are labelled.
 - Density and pressure need a calibrated, fixed camera, and live video needs a GPU.
 - The early warning extends a straight-line trend.
-- The movement alarm was validated on 3 scenes.
+- The movement alarm was validated on 3 staged scenes (11 of 11 caught). On real panic footage
+  it caught 1 of 3 views of the 2019 Times Square scare, missing two wide shots, with no false alarm
+  over 6 minutes of normal Las Vegas CCTV; other real clips could not be scored.
 - Map zones in the demos are illustrative, not official plans, and the video demo's zone limits are
   set by eye.
 - The zone-box check can miss a small mix of two spaces, and can't judge a moving camera.

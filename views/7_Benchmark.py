@@ -63,7 +63,7 @@ st.markdown(
     "<div class='card' style='margin-top:1rem;font-size:.9rem'><b>The 11 / 11 on the home page:</b> the surge alarm "
     "caught all 11 sudden-escape clips from the University of Minnesota, 3 scenes in all. It is a small test on "
     "staged clips, not Indian crowds, and the alarm's setting was chosen on those same 3 scenes, testing each one "
-    "with a setting from the other two. It has not been used at a real event.</div>",
+    "with a setting from the other two. On real panic footage it does much worse. Of the three views of the 2019 Times Square scare, it caught one, 3 seconds after the panic began, and missed two wide shots where the running crowd fills only a small part of the picture. Over 6 minutes of normal crowd on Las Vegas CCTV it raised no false alarm. Other clips in that set start mid-panic, so they could not be scored. It has not been used at a real event.</div>",
     unsafe_allow_html=True)
 
 # ── By scene ───────────────────────────────────────────────────────────────
