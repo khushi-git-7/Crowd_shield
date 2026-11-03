@@ -36,7 +36,7 @@ st.markdown(f"""
     <div class="stat"><b>86–91%</b><span>accurate on 10 hand-counted Indian photos: 86% on this free server, 91% at full detail</span></div>
     <div class="stat"><b>92.1%</b><span>accurate on street crowds (ShanghaiTech B)</span></div>
     <div class="stat"><b>86.1%</b><span>accurate on packed crowds (ShanghaiTech A)</span></div>
-    <div class="stat"><b>11 / 11</b><span>sudden surges caught in a small test: 11 clips, not Indian crowds</span></div>
+    <div class="stat"><b>11 / 11</b><span>staged escapes caught, not Indian crowds; on real panic footage, 1 of 3</span></div>
   </div>
 </div>
 """, unsafe_allow_html=True)
