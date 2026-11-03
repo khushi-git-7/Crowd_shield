@@ -10,7 +10,7 @@ from streamlit_folium import st_folium
 
 from crowdshield.geo import ring_area_m2
 from crowdshield.risk import thresholds_from_area
-from crowdshield.sitemap import (assess, list_sites, scenario_counts, site_from_drawings,
+from crowdshield.sitemap import (assess, list_sites, scenario_counts, site_from_drawings, walk_minutes,
                                  timeline, to_geojson)
 from shared_state import FRUIN_PRESETS, GLOBAL_CSS, RISK_COLORS, SEGMENTS, init_state, view_share
 from ui import compact, kpi_cards, next_step, page_header
@@ -340,6 +340,14 @@ with tab_plan:
                        "room for them in other zones, even ones reached through a busy zone.")
         else:
             st.caption("Total walking is every person's walk added up: lower is easier to carry out.")
+    def walk_note(p, src):
+        minutes = walk_minutes(p["path"], view["distance_m"], {z: r["per_m2"] for z, r in zones.items()})
+        if minutes is None:
+            return (f"<br><span class='route-time'>People in {p['high']} are packed too tightly to walk: thin the crowd "
+                    "at its edges first.</span>")
+        return (f"<br><span class='route-time'>About {max(1, round(minutes))} min on foot at this density, before any "
+                "queue at exits or gates.</span>")
+
     for p in plans:
         src = zones[p["high"]]
         if p["target"]:
@@ -347,7 +355,8 @@ with tab_plan:
                     f"({html.escape(src['name'])}) to <b>{p['target']}</b> "
                     f"({html.escape(zones[p['target']]['name'])}) along "
                     f"<span class='route-path'>{' → '.join(p['path'])}</span>. "
-                    f"Close entries to {p['high']}; open its exits towards {p['path'][1]}.")
+                    f"Close entries to {p['high']}; open its exits towards {p['path'][1]}. "
+                    + walk_note(p, src))
         else:
             body = (f"<b>{p['high']}</b> ({html.escape(src['name'])}) needs ~{p['move']:,} people out, "
                     f"but no connected zone has room. Hold all entries and call reinforcements.")

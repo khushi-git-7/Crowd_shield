@@ -6,6 +6,7 @@ Pure functions, no UI. The Map page draws what these return.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from .config import REPO_ROOT
@@ -111,6 +112,33 @@ def assess(site: dict, counts: dict, preset: dict, touch_m: float | None = None,
     else:
         plans = plan_optimal(counted, graph, distance)
     return {"zones": rows, "adjacency": graph, "plans": plans, "distance_m": distance}
+
+
+# Weidmann (1993): how fast people walk at a given density. Free walking is 1.34 m/s, and the crowd stops at 5.4/m².
+FREE_SPEED, GAMMA, JAM_DENSITY = 1.34, 1.913, 5.4
+
+
+def walking_speed(per_m2: float) -> float:
+    """Average walking speed in m/s at `per_m2` people per square metre, after Weidmann's fundamental diagram."""
+    if per_m2 <= 0:
+        return FREE_SPEED
+    if per_m2 >= JAM_DENSITY:
+        return 0.0
+    return FREE_SPEED * (1 - math.exp(-GAMMA * (1 / per_m2 - 1 / JAM_DENSITY)))
+
+
+def walk_minutes(path: list[str], distance_m: dict, density: dict) -> float | None:
+    """Minutes to walk a zone-to-zone path, each step at the speed the crowd allows between its two zones
+    (`density`: zone -> people per m², unknown zones count as empty), or None if the start is packed too tightly to
+    move. Queueing at exits and narrow gates is not included, so it is a lower bound."""
+    if walking_speed(density.get(path[0]) or 0) < 0.05:
+        return None
+    seconds = 0.0
+    for a, b in zip(path, path[1:]):
+        metres = float(distance_m.get((a, b), distance_m.get((b, a), 0.0)))
+        speed = walking_speed(((density.get(a) or 0) + (density.get(b) or 0)) / 2)
+        seconds += metres / max(speed, 0.05)
+    return seconds / 60
 
 
 def site_from_drawings(features: list, names: dict, letters: dict) -> dict:
