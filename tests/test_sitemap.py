@@ -79,3 +79,21 @@ def test_geojson_export_carries_the_numbers():
     assert fc["type"] == "FeatureCollection" and len(fc["features"]) == 5
     props = fc["features"][0]["properties"]
     assert {"zone", "name", "area_m2", "people", "per_m2", "risk", "connected_to"} <= set(props)
+
+
+def test_walking_speed_follows_weidmann():
+    from crowdshield.sitemap import walking_speed
+
+    assert walking_speed(0) == 1.34
+    assert abs(walking_speed(2.0) - 0.61) < 0.01  # a busy platform: about half of free walking speed
+    assert walking_speed(5.4) == 0.0
+
+
+def test_walk_minutes_adds_up_the_path_and_stops_when_packed():
+    from crowdshield.sitemap import walk_minutes, walking_speed
+
+    distance = {("A", "B"): 300.0, ("C", "B"): 300.0}
+    assert abs(walk_minutes(["A", "B", "C"], distance, {}) - 600 / 1.34 / 60) < 0.01
+    assert walk_minutes(["A", "B"], distance, {"A": 5.5}) is None
+    slow = walk_minutes(["A", "B"], distance, {"A": 4.0, "B": 0.0})  # the step is walked at the mean of 4 and 0 per m²
+    assert abs(slow - 300 / walking_speed(2.0) / 60) < 0.01
