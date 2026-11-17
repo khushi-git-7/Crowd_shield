@@ -464,9 +464,10 @@ moving?", never "who is this?".
 
 ## Team and credits
 
-Crowd Shield began as a group project by **Khushi Jain** ([@khushi-git-7](https://github.com/khushi-git-7))
-and [@SasmitaRK](https://github.com/SasmitaRK). Khushi researched, tested and
-picked the VisDrone-trained YOLO model and built the first prototype; Sasmita
+Crowd Shield began as a four-person final-year project by Divya V, Shalini K,
+Keerthana R ([@SasmitaRK](https://github.com/SasmitaRK)) and **Khushi**
+([@khushi-git-7](https://github.com/khushi-git-7)). Khushi researched, tested and
+picked the VisDrone-trained YOLO model and built the first prototype; Keerthana
 built the app's interface. Version 2 (counting accuracy, real units, crowd
 pressure, video and the evaluations) is Khushi's work on this fork.
 
