@@ -254,8 +254,8 @@ practical on an 8 GB laptop; live video needs a GPU.
 
 ## Credits
 
-Crowd Shield began as a two-person final-year project by Khushi and Sasmita (@SasmitaRK), who
-built the original Streamlit app. This report covers the v2 rebuild.
+Crowd Shield began as a four-person final-year project by Divya V, Shalini K, Keerthana R
+(@SasmitaRK, who built the original Streamlit app) and Khushi. This report covers the v2 rebuild.
 
 ## References
 
